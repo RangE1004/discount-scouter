@@ -125,8 +125,9 @@
         return;
       }
 
-      // 정식 지원되는 최신 모델(gemini-3.8-live)로 변경 완
-      const apiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-live:generateContent?key=${SECRET_AI_KEY}`;
+      // 수정된 코드
+      const apiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${SECRET_AI_KEY}`;
+
       
       const statusText = document.getElementById('user-status').querySelector(`option[value="${status}"]`).innerText;
       const cardText = document.getElementById('user-card').querySelector(`option[value="${card}"]`).innerText;
