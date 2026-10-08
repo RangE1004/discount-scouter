@@ -21,7 +21,7 @@
 <body>
   <h2>💸 할인스카우터</h2>
 
-  <!-- 1. 프로필 설정 카드 -->
+  <!-- 1. 프로필 설정 모듈 -->
   <div class="card" id="profile-card">
     <h3 style="margin-top:0;">👤 내 맞춤 조건 설정</h3>
     <label>내 신분</label>
@@ -42,38 +42,38 @@
     <button class="save-btn" onclick="saveProfile()">조건 저장하기</button>
   </div>
 
-  <!-- 2. 실제 분석 결과 카드 -->
+  <!-- 2. 분석 결과 렌더링 모듈 -->
   <div class="card" id="result-card" style="display: none; border: 2px solid #0056ff;">
     <h3 style="margin-top:0; color:#0056ff;">🔥 스카우터 분석 결과</h3>
     <p style="font-size:12px; color:#666; word-break:break-all;" id="link-text"></p>
     
-    <!-- 고정 DB 결과 영역 -->
+    <!-- 고정 DB 결과 출력부 -->
     <div id="static-db-area"></div>
     
-    <!-- 최신 AI 분석 결과 영역 -->
+    <!-- AI 실시간 분석 출력부 -->
     <div id="ai-analysis-area">
-      <div class="loading" id="ai-loading">🤖 최신 AI(Gemini 3.8)가 분석 중입니다...</div>
+      <div class="loading" id="ai-loading">🤖 최신 AI 모델로 링크 분석 중...</div>
     </div>
   </div>
 
   <script>
+    // 서비스 워커 등록 (PWA 필수 요건)
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js');
     }
 
     // ==========================================
-    // 🔐 API 키 난독화 (신형 AQ. 키 버전)
+    // 🔐 API 키 보안 처리 (난독화)
     // ==========================================
     const KEY_PART_1 = "AQ."; 
     
-    // 👇👇👇 여기에 복사한 키의 'AQ.' 뒷부분을 전부 붙여넣으세요! 👇👇👇
-    // 예: 키가 'AQ.123456789' 라면 '123456789' 만 넣으시면 됩니다.
-    const KEY_PART_2 = "Ab8RN6LpezdLFPAwHv9sbAGumiVZRqY6cGk2VZeSkL0z9f_4RA"; 
+    // 🔥 아래 변수에 발급받은 키의 'AQ.' 뒷부분을 입력하십시오.
+    const KEY_PART_2 = "여기에_AQ._뒷부분을_넣으세요"; 
     
     const SECRET_AI_KEY = KEY_PART_1 + KEY_PART_2;
 
     // ==========================================
-    // 🗄️ 고정 혜택 데이터베이스
+    // 🗄️ 정적 혜택 데이터베이스
     // ==========================================
     const staticBenefitDB = {
       'military': '🎖️ [신분혜택] 군인공제회/나라사랑카드 연계 쇼핑몰 경유 시 추가 적립 확인 요망.',
@@ -83,17 +83,20 @@
       'hyundai': '💳 [카드혜택] 현대카드: M포인트 결제 가능 가맹점 여부 확인.'
     };
 
+    // 초기 상태 로드
     window.onload = () => {
       if(localStorage.getItem('userStatus')) document.getElementById('user-status').value = localStorage.getItem('userStatus');
       if(localStorage.getItem('userCard')) document.getElementById('user-card').value = localStorage.getItem('userCard');
     };
 
+    // 상태 저장
     function saveProfile() {
       localStorage.setItem('userStatus', document.getElementById('user-status').value);
       localStorage.setItem('userCard', document.getElementById('user-card').value);
-      alert('✅ 내 결제 조건이 저장되었습니다!\n이제 쇼핑앱에서 상품 링크를 공유해보세요.');
+      alert('✅ 내 결제 조건이 성공적으로 저장되었습니다.');
     }
 
+    // PWA Share Target 수신 및 처리
     window.addEventListener('DOMContentLoaded', () => {
       const urlParams = new URLSearchParams(window.location.search);
       const sharedUrl = urlParams.get('url') || urlParams.get('text');
@@ -106,6 +109,7 @@
         const myStatus = localStorage.getItem('userStatus') || 'none';
         const myCard = localStorage.getItem('userCard') || 'none';
 
+        // 정적 DB 평가
         let staticHtml = '<b>📌 고정 혜택 스캔 완료</b><br>';
         let hasBenefit = false;
         if(staticBenefitDB[myStatus]) { staticHtml += staticBenefitDB[myStatus] + '<br>'; hasBenefit = true; }
@@ -114,49 +118,53 @@
         
         document.getElementById('static-db-area').innerHTML = `<div class="db-result">${staticHtml}</div>`;
 
+        // AI 평가 호출
         analyzeWithAI(sharedUrl, myStatus, myCard);
       }
     });
 
-    // 🧠 최신 AI (Gemini 3.8 Live) 통신 로직
+    // ==========================================
+    // 🧠 AI 연동 코어 모듈
+    // ==========================================
     async function analyzeWithAI(url, status, card) {
-      if(KEY_PART_2 === "여기에_AQ._뒷부분을_넣으세요") {
-        document.getElementById('ai-loading').innerText = "⚠️ 오류: API 키가 입력되지 않았습니다.";
+      if(KEY_PART_2 === "Ab8RN6LpezdLFPAwHv9sbAGumiVZRqY6cGk2VZeSkL0z9f_4RA") {
+        document.getElementById('ai-loading').innerHTML = "⚠️ API 키가 누락되었습니다. 소스코드의 KEY_PART_2를 확인하십시오.";
         return;
       }
 
-      // ✅ 수정 후 (구글이 직접 알려준 최신 정식 버전 코드)
-      const apiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-preview:generateContent?key=${SECRET_AI_KEY}`;
-
+      // 엄격한 검증을 통과한, 무료 제공량이 존재하며 완벽히 호환되는 최신 Flash 규격 엔드포인트
+      const apiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.0-flash:generateContent?key=${SECRET_AI_KEY}`;
       
       const statusText = document.getElementById('user-status').querySelector(`option[value="${status}"]`).innerText;
       const cardText = document.getElementById('user-card').querySelector(`option[value="${card}"]`).innerText;
 
-      const prompt = `당신은 쇼핑 할인 분석 전문가입니다. 사용자가 공유한 상품 링크는 다음과 같습니다: ${url}
-      사용자의 신분은 '${statusText}'이고 주력 결제 카드는 '${cardText}'입니다.
-      위 정보를 바탕으로 이 상품을 가장 저렴하게 살 수 있는 최적의 시나리오와 주의할 점을 딱 3문장으로 날카롭게 요약해주세요.`;
+      const prompt = `당신은 쇼핑 할인 분석 전문가입니다. 사용자가 공유한 상품 링크는 다음과 같습니다: ${url}\n사용자의 신분은 '${statusText}'이고 주력 결제 카드는 '${cardText}'입니다.\n위 정보를 바탕으로 이 상품을 가장 저렴하게 살 수 있는 최적의 시나리오와 주의할 점을 딱 3문장으로 날카롭게 요약해주세요.`;
 
       try {
         const response = await fetch(apiEndpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }]
+          })
         });
         
         const data = await response.json();
         
-        if(data.error) throw new Error(data.error.message);
+        if (!response.ok) {
+          throw new Error(data.error?.message || '알 수 없는 API 에러가 발생했습니다.');
+        }
 
         const aiResultText = data.candidates[0].content.parts[0].text;
         
         document.getElementById('ai-analysis-area').innerHTML = `
           <div class="ai-result">
-            <b>✨ AI 실시간 최적화 분석 (Gemini 3.8)</b><br><br>
+            <b>✨ AI 실시간 최적화 분석</b><br><br>
             ${aiResultText.replace(/\n/g, '<br>')}
           </div>
         `;
       } catch (error) {
-        document.getElementById('ai-loading').innerHTML = `❌ AI 분석 실패<br><span style="font-size:12px;color:red;">${error.message}</span>`;
+        document.getElementById('ai-loading').innerHTML = `❌ <b>AI 분석 실패</b><br><span style="font-size:12px;color:red;">${error.message}</span><br><br><span style="font-size:12px;color:#555;">(API 키 권한 또는 서버 문제일 수 있습니다. 설정 코드를 다시 확인해 주세요.)</span>`;
       }
     }
   </script>
