@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>할인스카우터</title>
+  <link rel="manifest" href="manifest.json">
+</head>
+<body style="padding: 20px; font-family: sans-serif;">
+  <h2>💸 할인스카우터</h2>
+  <div id="result" style="margin-top: 20px; padding: 15px; background: #f0f0f0; border-radius: 8px;">
+    앱을 켜고 쇼핑몰 링크를 기다리는 중...
+  </div>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js');
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const sharedUrl = urlParams.get('url') || urlParams.get('text');
+
+      if (sharedUrl) {
+        document.getElementById('result').innerHTML = `
+          <p>🔗 <b>공유받은 상품:</b><br>${sharedUrl}</p>
+          <hr>
+          <p>🔥 군인/20대 조건 혜택 계산 중...</p>
+          <button style="padding: 10px; background: blue; color: white; border: none; border-radius: 5px;">
+            최적 할인가 확인
+          </button>
+        `;
+      }
+    });
+  </script>
+</body>
+</html>
