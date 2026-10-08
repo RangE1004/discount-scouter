@@ -1,7 +1,7 @@
 {
   "name": "할인스카우터",
   "short_name": "할인스카우터",
-  "start_url": "/?source=pwa",
+  "start_url": "/discount-scouter/?source=pwa",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#000000",
@@ -13,7 +13,7 @@
     }
   ],
   "share_target": {
-    "action": "/",
+    "action": "/discount-scouter/",
     "method": "GET",
     "params": {
       "title": "title",
