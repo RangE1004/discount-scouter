@@ -54,7 +54,7 @@
     
     <div id="static-db-area"></div>
     <div id="ai-analysis-area">
-      <div class="loading" id="ai-loading">🤖 초고속 AI(Gemini 2.0 Flash)로 최적 할인가 분석 중...</div>
+      <div class="loading" id="ai-loading">🤖 초고속 AI(Gemini 3.8 Flash)로 최적 할인가 분석 중...</div>
     </div>
   </div>
 
@@ -71,14 +71,12 @@
       'hyundai': '💳 [카드혜택] 현대카드: M포인트 결제 가능 가맹점 여부 확인.'
     };
 
-    // 화면 켜질 때 기존 정보 불러오기 (더 안정적인 방식으로 변경)
     document.addEventListener('DOMContentLoaded', () => {
       if(localStorage.getItem('apiKey')) document.getElementById('api-key').value = localStorage.getItem('apiKey');
       if(localStorage.getItem('userStatus')) document.getElementById('user-status').value = localStorage.getItem('userStatus');
       if(localStorage.getItem('userCard')) document.getElementById('user-card').value = localStorage.getItem('userCard');
     });
 
-    // 직관적인 저장 로직
     function saveProfile() {
       const keyInput = document.getElementById('api-key').value.trim();
       
@@ -91,19 +89,16 @@
       localStorage.setItem('userStatus', document.getElementById('user-status').value);
       localStorage.setItem('userCard', document.getElementById('user-card').value);
       
-      // 버튼 자체를 초록색 성공 표시로 바꾸기
       const btn = document.getElementById('save-btn');
       btn.innerText = "✅ 내 폰에 저장 완료!";
       btn.style.background = "#28a745";
       
-      // 2초 뒤에 원래 버튼으로 복구
       setTimeout(() => {
         btn.innerText = "설정 안전하게 저장하기";
         btn.style.background = "#333";
       }, 2000);
     }
 
-    // 공유하기 낚아채기
     window.addEventListener('DOMContentLoaded', () => {
       const urlParams = new URLSearchParams(window.location.search);
       const sharedData = urlParams.get('text') || urlParams.get('url') || urlParams.get('title');
@@ -136,7 +131,9 @@
         return;
       }
 
-      const apiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${SECRET_AI_KEY}`;
+      // 구글이 명시적으로 지정한 최신 표준 텍스트 모델 적용 (gemini-3.8-flash)
+      const apiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${SECRET_AI_KEY}`;
+      
       const statusText = document.getElementById('user-status').querySelector(`option[value="${status}"]`).innerText;
       const cardText = document.getElementById('user-card').querySelector(`option[value="${card}"]`).innerText;
 
@@ -155,7 +152,7 @@
         const aiResultText = data.candidates[0].content.parts[0].text;
         document.getElementById('ai-analysis-area').innerHTML = `
           <div class="ai-result">
-            <b>✨ AI 실시간 최적화 분석 완료</b><br><br>
+            <b>✨ AI 실시간 최적화 분석 완료 (Gemini 3.8 Flash)</b><br><br>
             ${aiResultText.replace(/\n/g, '<br>')}
           </div>
         `;
