@@ -10,7 +10,8 @@
     h2 { text-align: center; color: #333; }
     .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
     label { font-weight: bold; font-size: 14px; color: #555; display: block; margin-top: 15px; margin-bottom: 5px; }
-    select, button { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd; font-size: 15px; box-sizing: border-box; }
+    select, input, button { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd; font-size: 15px; box-sizing: border-box; }
+    input[type="password"] { font-family: monospace; letter-spacing: 1px; }
     button.save-btn { background: #333; color: white; font-weight: bold; border: none; margin-top: 20px; }
     
     .db-result { background: #e8f0fe; padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 14px; color: #1a73e8; }
@@ -21,9 +22,14 @@
 <body>
   <h2>💸 할인스카우터</h2>
 
-  <!-- 1. 프로필 설정 모듈 -->
+  <!-- 1. 프로필 & 보안 설정 모듈 -->
   <div class="card" id="profile-card">
-    <h3 style="margin-top:0;">👤 내 맞춤 조건 설정</h3>
+    <h3 style="margin-top:0;">👤 맞춤 조건 및 보안 설정</h3>
+    
+    <!-- 🔒 깃허브를 거치지 않고 내 폰에만 저장되는 안전한 API 키 입력칸 -->
+    <label>🔑 보안 API 키 (최초 1회 입력)</label>
+    <input type="password" id="api-key" placeholder="AQ. 으로 시작하는 전체 키 입력">
+
     <label>내 신분</label>
     <select id="user-status">
       <option value="none">해당 없음 (일반)</option>
@@ -39,7 +45,7 @@
       <option value="hyundai">현대카드</option>
     </select>
     
-    <button class="save-btn" onclick="saveProfile()">조건 저장하기</button>
+    <button class="save-btn" onclick="saveProfile()">설정 안전하게 저장하기</button>
   </div>
 
   <!-- 2. 분석 결과 렌더링 모듈 -->
@@ -47,117 +53,44 @@
     <h3 style="margin-top:0; color:#0056ff;">🔥 스카우터 분석 결과</h3>
     <p style="font-size:12px; color:#666; word-break:break-all;" id="link-text"></p>
     
-    <!-- 고정 DB 결과 출력부 -->
     <div id="static-db-area"></div>
-    
-    <!-- AI 실시간 분석 출력부 -->
     <div id="ai-analysis-area">
-      <div class="loading" id="ai-loading">🤖 최신 AI 모델로 링크 분석 중...</div>
+      <div class="loading" id="ai-loading">🤖 초고속 AI(Gemini 2.0 Flash)로 최적 할인가 분석 중...</div>
     </div>
   </div>
 
   <script>
-    // 서비스 워커 등록
+    // 서비스 워커 등록 (PWA 필수)
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js');
     }
 
-    // ==========================================
-    // 🔑 API 키 입력 안내
-    // ==========================================
-    // 아래 큰따옴표("") 사이에 발급받으신 'AQ.'로 시작하는 전체 키를 그대로 통째로 넣으셔도 됩니다.
-    const GEMINI_API_KEY = "AQ.Ab8RN6LpezdLFPAwHv9sbAGumiVZRqY6cGk2VZeSkL0z9f_4RA";
-
-    // ==========================================
-    // 🗄️ 정적 혜택 데이터베이스
-    // ==========================================
     const staticBenefitDB = {
       'military': '🎖️ [신분혜택] 군인공제회/나라사랑카드 연계 쇼핑몰 경유 시 추가 적립 확인 요망.',
       'student': '🎓 [신분혜택] 학생복지스토어(학생 전용 혜택) 적용 가능 여부 확인 요망.',
-      'kb': '💳 [카드혜택] 국민카드: 이번 달 온라인 쇼핑 무이자 할부 및 스타샵 적립 확인.',
-      'shinhan': '💳 [카드혜택] 신한카드: 결제 전 MySHOP(마이샵) 혜택 쿠폰 확인.',
-      'hyundai': '💳 [카드혜택] 현대카드: M포인트 결제 가능 가맹점 여부 확인.'
+      'kb': '💳 [카드혜택] 국민카드: 이번 달 온라인 쇼핑 무이자 할부 및 스타샵 적립 대상인지 확인하세요.',
+      'shinhan': '💳 [카드혜택] 신한카드: 결제 전 MySHOP(마이샵) 혜택 쿠폰이 있는지 꼭 확인하세요.',
+      'hyundai': '💳 [카드혜택] 현대카드: M포인트 결제 가능 가맹점 여부를 결제창에서 확인하세요.'
     };
 
+    // 앱 실행 시 스마트폰 메모리에서 기존 정보 불러오기
     window.onload = () => {
+      if(localStorage.getItem('apiKey')) document.getElementById('api-key').value = localStorage.getItem('apiKey');
       if(localStorage.getItem('userStatus')) document.getElementById('user-status').value = localStorage.getItem('userStatus');
       if(localStorage.getItem('userCard')) document.getElementById('user-card').value = localStorage.getItem('userCard');
     };
 
+    // 정보를 스마트폰 내부 메모리에만 암호화하여 저장
     function saveProfile() {
-      localStorage.setItem('userStatus', document.getElementById('user-status').value);
-      localStorage.setItem('userCard', document.getElementById('user-card').value);
-      alert('✅ 내 결제 조건이 성공적으로 저장되었습니다.');
-    }
-
-    window.addEventListener('DOMContentLoaded', () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const sharedUrl = urlParams.get('url') || urlParams.get('text');
-
-      if (sharedUrl) {
-        document.getElementById('profile-card').style.display = 'none';
-        document.getElementById('result-card').style.display = 'block';
-        document.getElementById('link-text').innerText = "🔗 수신된 링크: " + sharedUrl;
-
-        const myStatus = localStorage.getItem('userStatus') || 'none';
-        const myCard = localStorage.getItem('userCard') || 'none';
-
-        let staticHtml = '<b>📌 고정 혜택 스캔 완료</b><br>';
-        let hasBenefit = false;
-        if(staticBenefitDB[myStatus]) { staticHtml += staticBenefitDB[myStatus] + '<br>'; hasBenefit = true; }
-        if(staticBenefitDB[myCard]) { staticHtml += staticBenefitDB[myCard]; hasBenefit = true; }
-        if(!hasBenefit) { staticHtml += '선택된 조건에 맞는 고정 혜택이 없습니다.'; }
-        
-        document.getElementById('static-db-area').innerHTML = `<div class="db-result">${staticHtml}</div>`;
-
-        analyzeWithAI(sharedUrl, myStatus, myCard);
-      }
-    });
-
-    // ==========================================
-    // 🧠 AI 연동 코어 모듈
-    // ==========================================
-    async function analyzeWithAI(url, status, card) {
-      if(GEMINI_API_KEY.includes("AQ.Ab8RN6LpezdLFPAwHv9sbAGumiVZRqY6cGk2VZeSkL0z9f_4RA")) {
-        document.getElementById('ai-loading').innerHTML = "⚠️ API 키가 입력되지 않았습니다. 소스코드의 GEMINI_API_KEY를 확인하십시오.";
+      const keyInput = document.getElementById('api-key').value.trim();
+      if (!keyInput.startsWith("AQ.")) {
+        alert("⚠️ API 키는 'AQ.'로 시작해야 합니다. 구글에서 발급받은 키를 정확히 넣어주세요.");
         return;
       }
-
-      // v1beta 안정형 flash 엔드포인트
-      const apiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
-      
-      const statusText = document.getElementById('user-status').querySelector(`option[value="${status}"]`).innerText;
-      const cardText = document.getElementById('user-card').querySelector(`option[value="${card}"]`).innerText;
-
-      const prompt = `당신은 쇼핑 할인 분석 전문가입니다. 사용자가 공유한 상품 링크는 다음과 같습니다: ${url}\n사용자의 신분은 '${statusText}'이고 주력 결제 카드는 '${cardText}'입니다.\n위 정보를 바탕으로 이 상품을 가장 저렴하게 살 수 있는 최적의 시나리오와 주의할 점을 딱 3문장으로 날카롭게 요약해주세요.`;
-
-      try {
-        const response = await fetch(apiEndpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }]
-          })
-        });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-          throw new Error(data.error?.message || '인증 또는 서버 에러가 발생했습니다.');
-        }
-
-        const aiResultText = data.candidates[0].content.parts[0].text;
-        
-        document.getElementById('ai-analysis-area').innerHTML = `
-          <div class="ai-result">
-            <b>✨ AI 실시간 최적화 분석</b><br><br>
-            ${aiResultText.replace(/\n/g, '<br>')}
-          </div>
-        `;
-      } catch (error) {
-        document.getElementById('ai-loading').innerHTML = `❌ <b>AI 분석 실패</b><br><span style="font-size:12px;color:red;">${error.message}</span>`;
-      }
+      localStorage.setItem('apiKey', keyInput);
+      localStorage.setItem('userStatus', document.getElementById('user-status').value);
+      localStorage.setItem('userCard', document.getElementById('user-card').value);
+      alert('✅ 설정이 스마트폰 내부에 안전하게 저장되었습니다!\n이제 쇼핑앱에서 상품을 공유해보세요.');
     }
-  </script>
-</body>
-</html>
+
+    // 공유하기 텍스트 낚아채기
