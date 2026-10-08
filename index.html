@@ -125,8 +125,8 @@
         return;
       }
 
-      // 수정된 코드
-      const apiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${SECRET_AI_KEY}`;
+      // ✅ 수정 후 (구글이 직접 알려준 최신 정식 버전 코드)
+      const apiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent?key=${SECRET_AI_KEY}`;
 
       
       const statusText = document.getElementById('user-status').querySelector(`option[value="${status}"]`).innerText;
