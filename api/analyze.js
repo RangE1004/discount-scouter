@@ -4,11 +4,11 @@ export default async function handler(req, res) {
   const { sharedText, pText } = req.body;
   const SECRET_AI_KEY = process.env.GEMINI_API_KEY; 
 
-  if (!SECRET_AI_KEY) return res.status(500).json({ error: '서버에 API 키가 없습니다.' });
+  if (!SECRET_AI_KEY) return res.status(500).json({ error: '서버에 API 키가 없습니다. Vercel 환경변수를 확인하세요.' });
 
-  // 1. 크롤링(스니핑) 로직은 그대로 유지 (정확도를 위해)
   const urlMatch = sharedText.match(/(https?:\/\/[^\s]+)/);
   let scrapedTitle = "상품명 파악 불가";
+  
   if (urlMatch) {
     try {
       const htmlResponse = await fetch(urlMatch[0], { headers: { 'User-Agent': 'Mozilla/5.0' } });
@@ -26,7 +26,6 @@ export default async function handler(req, res) {
   const apiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${SECRET_AI_KEY}`;
 
   try {
-    // 💡 꼼수 제거: 가짜 IP 없이 당당하게 구글 VIP 하이패스로 1번만 딱 찌릅니다.
     const response = await fetch(apiEndpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -37,10 +36,14 @@ export default async function handler(req, res) {
     });
 
     const data = await response.json();
-    if (!response.ok) return res.status(response.status).json({ error: data.error?.message || "구글 API 거절" });
+    
+    // 구글 API가 거절하거나 에러를 뱉었을 때 상세 내용 전달
+    if (!response.ok) {
+      return res.status(response.status).json({ error: data.error?.message || `구글 통신 실패 (상태 코드: ${response.status})` });
+    }
     
     res.status(200).json(data);
   } catch (error) {
-    res.status(500).json({ error: "서버 내부 에러" });
+    res.status(500).json({ error: "Vercel 서버 내부 통신 에러가 발생했습니다." });
   }
 }
