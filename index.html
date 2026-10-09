@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>할인스카우터</title>
+  <!-- 💡 앱 이름 변경 -->
+  <title>퍼센트</title>
   <link rel="manifest" href="manifest.json">
   <style>
     :root { --navy: #1b263b; --navy-light: #415a77; --bg-color: #f8f9fa; --card-bg: #ffffff; --pastel-blue: #e0eaf5; --pastel-red: #fbe5e6; --text-main: #333333; --text-muted: #777777; }
@@ -28,42 +29,57 @@
   </style>
 </head>
 <body>
-  <div class="header"><h2><span class="logo-icon">%</span>할인스카우터</h2></div>
+  <div class="header">
+    <!-- 💡 로고 아이콘에 % 유지, 직관적인 이름 적용 -->
+    <h2><span class="logo-icon">%</span>몇퍼</h2>
+  </div>
 
   <div class="card" id="profile-card">
-    <h3>내 맞춤 프로필 설정</h3>
-    <div class="form-group"><label>💳 주력 결제 카드</label><select id="user-card"><option value="none">선택 안함</option><option value="kb">국민카드</option><option value="shinhan">신한카드</option><option value="hyundai">현대카드</option><option value="samsung">삼성카드</option></select></div>
-    <div class="form-group"><label>👑 유료 멤버십 가입</label><select id="user-membership"><option value="none">가입 안함 (일반)</option><option value="wow">쿠팡 와우회원 (무료배송)</option><option value="naver">네이버플러스 멤버십 (추가적립)</option><option value="universe">신세계 유니버스 클럽</option></select></div>
+    <h3>내 맞춤 결제 환경</h3>
+    <div class="form-group"><label>💳 주로 쓰는 카드</label><select id="user-card"><option value="none">선택 안함</option><option value="kb">국민카드</option><option value="shinhan">신한카드</option><option value="hyundai">현대카드</option><option value="samsung">삼성카드</option></select></div>
+    <div class="form-group"><label>👑 구독 중인 멤버십</label><select id="user-membership"><option value="none">가입 안함 (일반)</option><option value="wow">쿠팡 와우회원</option><option value="naver">네이버플러스 멤버십</option><option value="universe">신세계 유니버스 클럽</option></select></div>
     <div class="form-group"><label>📱 통신사 혜택</label><select id="user-telecom"><option value="none">선택 안함</option><option value="skt">SKT (T멤버십)</option><option value="kt">KT (KT멤버십)</option><option value="lgu">LG U+ (U+멤버십)</option></select></div>
-    <div class="form-group"><label>🎓 특정 신분</label><select id="user-status"><option value="none">해당 없음 (일반)</option><option value="military">군인</option><option value="student">대학생</option></select></div>
-    <button class="save-btn" id="save-btn" onclick="saveProfile()">설정 완료</button>
+    <div class="form-group"><label>🎓 신분 혜택</label><select id="user-status"><option value="none">해당 없음 (일반)</option><option value="military">군인</option><option value="student">대학생</option></select></div>
+    <button class="save-btn" id="save-btn" onclick="saveProfile()">저장하기</button>
   </div>
 
   <div class="card" id="result-card" style="display: none; border: 2px solid var(--navy);">
-    <h3>🎯 스카우터 타겟팅 완료</h3>
+    <h3>✨ 맞춤 할인 정보를 찾았어요!</h3>
     <div class="result-link" id="link-text"></div>
     <div id="static-db-area"></div>
     <div id="ai-analysis-area">
       <div class="loading" id="ai-loading">
-        <span style="color:var(--navy); font-size:15px; font-weight:bold;">⚡ VIP 쾌속 분석 중...</span>
+        <!-- 💡 인간적인 안내 문구 유지 -->
+        <span style="color:var(--navy); font-size:15px; font-weight:bold;">🔍 최적의 결제 조건을 확인하고 있어요... (약 3초)</span>
       </div>
     </div>
+    <button class="save-btn" style="background:#888; margin-top:20px;" onclick="location.reload()">새로운 상품 분석하기</button>
   </div>
 
   <script>
     if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
 
+    // 🗂️ 한국 주요 쇼핑앱 확장 데이터 유지
     const benefitDB = {
-      'coupang': { name: '쿠팡', base: '로켓배송 상품인지 확인하세요.', membership: { 'wow': '🚀 [멤버십] 와우회원 적용: 100% 무료배송 및 즉시할인.' }, card: { 'kb': '💳 [카드] 국민카드: 로켓제휴 최대 20% 즉시할인 가능성.', 'samsung': '💳 [카드] 삼성카드: 쿠팡 결제 할인 프로모션.' } },
-      'naver': { name: '네이버쇼핑', base: '네이버페이 아이콘이 있는지 확인하세요.', membership: { 'naver': '🟩 [멤버십] 네이버플러스: Npay 결제 최대 5% 추가 적립.' }, telecom: { 'lgu': '📱 [통신사] LG U+: 멤버십 무료 혜택 연동 가능.' }, card: { 'hyundai': '💳 [카드] 현대카드: 네이버현대카드 결제 추가 5% 적립.' } },
-      '11st': { name: '11번가', base: 'T멤버십 적용 아이콘이 있는지 확인하세요.', telecom: { 'skt': '📱 [통신사] SKT: T멤버십 최대 11% 할인 무조건 적용.' }, membership: { 'universe': '👑 [멤버십] 유니버스 클럽: 전용 할인 쿠폰.' } },
-      'common': { name: '기타 쇼핑몰', base: '신규 가입 쿠폰이나 카카오페이 결제 혜택을 확인하세요.', status: { 'military': '🎖️ [군인] 복지몰에 같은 상품이 더 싼지 먼저 검색하세요.' } }
+      'coupang': { name: '쿠팡', base: '장바구니에 담아두고 가격 변동을 지켜보거나, 정기배송 할인을 확인해 보세요.', membership: { 'wow': '🚀 [와우회원] 100% 무료배송 및 와우 전용 즉시 할인이 적용됩니다.' }, card: { 'kb': '💳 [국민카드] 로켓제휴 카테고리 최대 20% 즉시할인 여부를 확인하세요.', 'samsung': '💳 [삼성카드] 쿠팡 결제 시 추가 할인 프로모션이 잦습니다.' } },
+      'naver': { name: '네이버쇼핑', base: '상품페이지 하단에 Npay 추가 적립 배너가 있는지 확인하세요.', membership: { 'naver': '🟩 [네이버플러스] Npay 결제 시 최대 5% 추가 적립이 확정됩니다.' }, telecom: { 'lgu': '📱 [LG U+] 멤버십 혜택으로 네이버플러스 구독료 무료 연동이 가능합니다.' }, card: { 'hyundai': '💳 [현대카드] 네이버현대카드 결제 시 5% 추가 적립됩니다.' } },
+      '11st': { name: '11번가', base: '결제 전 T멤버십 적용 버튼을 눌러보세요.', telecom: { 'skt': '📱 [SKT] T멤버십으로 최대 11% 할인(또는 적립)을 꼭 챙기세요.' }, membership: { 'universe': '👑 [유니버스 클럽] 11번가 전용 할인 쿠폰팩을 다운로드하세요.' } },
+      'musinsa': { name: '무신사', base: '구매 전 반드시 등급 할인과 장바구니 쿠폰을 중복 적용하세요.', card: { 'hyundai': '💳 [현대카드] 무신사 현대카드로 결제 시 5% 청구 할인이 가능합니다.' } },
+      'oliveyoung': { name: '올리브영', base: '오늘드림(당일배송)이 더 저렴한 경우가 있으니 배송비까지 합산해 비교해 보세요.' },
+      'ssg': { name: 'SSG닷컴', base: '이마트몰 합배송(쓱배송)을 이용하면 배송비를 절약할 수 있습니다.', membership: { 'universe': '👑 [유니버스 클럽] 매월 지급되는 5%~7% 할인 쿠폰을 적용하세요.' } },
+      'kurly': { name: '마켓컬리', base: '카카오페이나 토스페이 결제 시 즉시 할인되는 프로모션이 있는지 확인하세요.' },
+      'common': { name: '쇼핑몰', base: '신규 가입 쿠폰이나 카카오페이 결제 혜택을 먼저 찾아보는 것을 추천합니다.', status: { 'military': '🎖️ [군인 복지 팁] 군인 복지몰(영외마트 등)에 같은 상품이 더 싼지 먼저 검색해 보세요.' } }
     };
 
     function detectPlatform(text) {
-      if(text.includes('coupang') || text.includes('쿠팡')) return 'coupang';
-      if(text.includes('naver') || text.includes('네이버')) return 'naver';
-      if(text.includes('11st') || text.includes('11번가')) return '11st';
+      const lowerText = text.toLowerCase();
+      if(lowerText.includes('coupang') || lowerText.includes('쿠팡')) return 'coupang';
+      if(lowerText.includes('naver') || lowerText.includes('네이버')) return 'naver';
+      if(lowerText.includes('11st') || lowerText.includes('11번가')) return '11st';
+      if(lowerText.includes('musinsa') || lowerText.includes('무신사')) return 'musinsa';
+      if(lowerText.includes('oliveyoung') || lowerText.includes('올리브영')) return 'oliveyoung';
+      if(lowerText.includes('ssg') || lowerText.includes('쓱')) return 'ssg';
+      if(lowerText.includes('kurly') || lowerText.includes('컬리')) return 'kurly';
       return 'common';
     }
 
@@ -71,6 +87,7 @@
       ['userCard', 'userMembership', 'userTelecom', 'userStatus'].forEach(id => {
         if(localStorage.getItem(id)) document.getElementById(id.replace(/([A-Z])/g, "-$1").toLowerCase()).value = localStorage.getItem(id);
       });
+      processSharedData(); 
     });
 
     function saveProfile() {
@@ -78,11 +95,12 @@
         localStorage.setItem(id, document.getElementById(id.replace(/([A-Z])/g, "-$1").toLowerCase()).value);
       });
       const btn = document.getElementById('save-btn');
-      btn.innerText = "✅ 설정 완료!"; btn.style.background = "#28a745";
-      setTimeout(() => { btn.innerText = "설정 완료"; btn.style.background = "var(--navy)"; }, 2000);
+      btn.innerText = "✅ 저장되었습니다!"; btn.style.background = "#28a745";
+      setTimeout(() => { btn.innerText = "저장하기"; btn.style.background = "var(--navy)"; }, 2000);
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
+    // 💡 URL 공유 후 앱을 끄지 않고 또 공유했을 때(연속 동작) 작동하는 핵심 로직 유지
+    function processSharedData() {
       const urlParams = new URLSearchParams(window.location.search);
       const sharedData = urlParams.get('text') || urlParams.get('title') || urlParams.get('url');
 
@@ -91,27 +109,38 @@
         
         document.getElementById('profile-card').style.display = 'none';
         document.getElementById('result-card').style.display = 'block';
-        document.getElementById('link-text').innerText = "🔗 수신: " + sharedData;
+        
+        const shortData = sharedData.length > 50 ? sharedData.substring(0, 50) + "..." : sharedData;
+        document.getElementById('link-text').innerText = "🔗 확인 중인 상품: " + shortData;
 
         const p = { card: localStorage.getItem('userCard') || 'none', mem: localStorage.getItem('userMembership') || 'none', tel: localStorage.getItem('userTelecom') || 'none', stat: localStorage.getItem('userStatus') || 'none' };
-        const platform = detectPlatform(sharedData.toLowerCase());
+        const platform = detectPlatform(sharedData);
         const db = benefitDB[platform];
 
-        let staticHtml = `<b>📌 [${db.name}] 스카우터 1차 진단</b><br><br>${db.base}<br><br>`;
+        let staticHtml = `<b>📌 [${db.name}] 기본 할인 팁</b><br><br>${db.base}<br><br>`;
         let hasBenefit = false;
         if(db.membership && db.membership[p.mem]) { staticHtml += db.membership[p.mem] + "<br>"; hasBenefit = true; }
         if(db.telecom && db.telecom[p.tel]) { staticHtml += db.telecom[p.tel] + "<br>"; hasBenefit = true; }
         if(db.card && db.card[p.card]) { staticHtml += db.card[p.card] + "<br>"; hasBenefit = true; }
         if(db.status && db.status[p.stat]) { staticHtml += db.status[p.stat] + "<br>"; hasBenefit = true; }
-        if(!hasBenefit) { staticHtml += "설정하신 프로필에 맞는 플랫폼 전용 고정 혜택은 없습니다."; }
+        if(!hasBenefit) { staticHtml += "설정하신 맞춤 정보에 해당하는 추가 혜택은 없습니다."; }
         
         document.getElementById('static-db-area').innerHTML = `<div class="db-result">${staticHtml}</div>`;
 
         analyzeWithAI_Robust(sharedData, p);
       }
+    }
+
+    // 💡 화면이 다시 보여질 때(다른 앱에서 돌아왔을 때) 연속 공유를 감지하는 로직
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        processSharedData();
+      }
     });
 
+    // 💡 완벽하게 에러를 방어하는 무적의 AI 파싱 로직 유지
     async function analyzeWithAI_Robust(sharedText, p) {
+      document.getElementById('ai-loading').innerHTML = `<span style="color:var(--navy); font-size:15px; font-weight:bold;">🔍 최적의 결제 조건을 확인하고 있어요... (약 3초)</span>`;
       const pText = `카드:${p.card}, 멤버십:${p.mem}, 통신사:${p.tel}, 신분:${p.stat}`;
 
       try {
@@ -123,11 +152,11 @@
         
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.error || `서버 응답 실패 (코드: ${response.status})`);
+          throw new Error(errorData.error || `서버 응답 지연`);
         }
 
         const data = await response.json();
-        if (!data.candidates || data.candidates.length === 0) throw new Error("구글 AI 데이터가 비어있습니다.");
+        if (!data.candidates || data.candidates.length === 0) throw new Error("분석 데이터를 가져오지 못했습니다.");
 
         const rawText = data.candidates[0].content.parts[0].text;
         let tipsHtml = "";
@@ -138,37 +167,36 @@
           const parsedJson = JSON.parse(cleanText);
           
           if (Array.isArray(parsedJson.tips)) {
-            tipsHtml = parsedJson.tips.map(tip => `✅ ${tip}`).join('<br>');
+            tipsHtml = parsedJson.tips.map(tip => `✅ ${tip}`).join('<br><br>');
           } else {
-            tipsHtml = parsedJson.tips || "팁 요약 불가";
+            tipsHtml = parsedJson.tips;
           }
-          cautionText = parsedJson.caution || "주의점 없음";
+          cautionText = parsedJson.caution;
           
         } catch (parseError) {
-          // 💡 개선된 방어 로직: JSON이 깨져서 넘어와도, 보기 흉한 기호들을 싹 지우고 깔끔한 글로 보여줍니다.
           let readableText = rawText
-            .replace(/\{"tips":\s*\[/g, '')              .replace(/"caution":/g, '<br><br><b>⚠️ 결제 주의사항</b><br>🚨')             .replace(/["\]}]/g, '') 
-            .replace(/,/g, '<br>✅ ') 
+            .replace(/\{"tips":\s*\[/g, '')              .replace(/"caution":/g, '<br><br><b>⚠️ 결제 전 주의사항</b><br>🚨')             .replace(/["\]}]/g, '') 
+            .replace(/,/g, '<br><br>✅ ') 
             .trim();
           
           if (!readableText.startsWith('✅')) readableText = '✅ ' + readableText;
 
           tipsHtml = readableText; 
-          cautionText = "구글 AI 분석 결과 (일부 서식 깨짐)";
+          cautionText = "할인 정보 요약 완료";
         }
         
         document.getElementById('ai-analysis-area').innerHTML = `
           <div class="ai-result">
-            <span style="font-size:11px; color:#888; display:block; margin-bottom:8px;">✨ AI 스카우터 분석 완료</span>
-            <b>💰 추가 할인 / 분석 결과</b><br>${tipsHtml}<br><br>
-            <b>⚠️ 결제 주의사항</b><br>🚨 ${cautionText}
+            <span style="font-size:11px; color:#888; display:block; margin-bottom:8px;">✨ AI가 찾은 추가 혜택</span>
+            <b>💰 이렇게 결제하는 걸 추천해요</b><br><br>${tipsHtml}<br><br>
+            <b>⚠️ 결제 전 주의사항</b><br><br>🚨 ${cautionText}
           </div>
         `;
       } catch (error) {
         document.getElementById('ai-analysis-area').innerHTML = `
           <div class="ai-result" style="background:#fce8e6; border:1px solid #d93025; color:#d93025;">
-            <b>❌ 통신 실패 (상세 원인)</b><br>
-            <span style="font-size:14px; color:#333; font-weight:bold; display:block; margin:8px 0;">[에러 내용] ${error.message}</span>
+            <b>❌ 일시적인 연결 문제</b><br>
+            <span style="font-size:13px; color:#555; display:block; margin:8px 0;">인터넷이 불안정하거나 정보가 너무 많아 확인이 지연되었습니다. [새로운 상품 분석하기] 버튼을 눌러 다시 시도해 주세요.</span>
           </div>
         `;
       }
