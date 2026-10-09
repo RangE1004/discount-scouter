@@ -29,10 +29,12 @@ export default async function handler(req, res) {
     }
   }
 
+  // 💡 핵심 변경: AI 프롬프트(명령어) 고도화 및 글자 짤림 방지
   const prompt = `쇼핑 할인 요약 AI. 텍스트: "${sharedText}", 상품명: "${scrapedTitle}", 조건: [${pText}]
-  일반 혜택은 제외하고 숨은 할인 요령과 결제 주의점만 분석해.
-  [규칙] 반드시 마크다운(\`\`\`json 등) 없이 순수한 JSON 객체로만 응답해.
-  [형식] {"tips": ["요령1", "요령2"], "caution": "주의점"}`;
+  [요청] 일반 혜택은 제외하고, 숨은 할인 요령(할인율 % 및 구체적인 금액 강조)과 결제 주의점만 분석해.
+  [규칙 1] 마크다운(\`\`\`json 등) 없이 순수한 JSON 객체로 응답해.
+  [규칙 2] 데이터가 중간에 끊기지 않도록 문장을 간결하게 압축해. (최대 300자 이내)
+  [형식] {"tips": ["할인율 5% 적용 요령", "요령2"], "caution": "주의점 짧게 요약"}`;
 
   const apiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${SECRET_AI_KEY}`;
 
@@ -42,6 +44,7 @@ export default async function handler(req, res) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         contents: [{ parts: [{ text: prompt }] }],
+        // 💡 짤림 방지 2차 대책: 토큰을 800으로 넉넉히 상향
         generationConfig: { maxOutputTokens: 800, temperature: 0.2, responseMimeType: "application/json" } 
       })
     });
@@ -52,20 +55,16 @@ export default async function handler(req, res) {
       return res.status(response.status).json({ error: data.error?.message || `구글 통신 실패 (${response.status})` });
     }
     
-    // 💡 방어 로직 1: 구글이 빈 껍데기만 보냈을 때 뻗음 방지
     const candidate = data.candidates && data.candidates[0];
     if (!candidate) {
       return res.status(500).json({ error: "구글 AI가 응답 데이터를 생성하지 않았습니다." });
     }
-    
-    // 💡 방어 로직 2: 안전 필터(Safety) 등으로 답변 텍스트(content)가 누락되었을 때 뻗음 방지
     if (!candidate.content || !candidate.content.parts || candidate.content.parts.length === 0) {
       return res.status(500).json({ error: `AI 답변 차단됨 (원인: ${candidate.finishReason || '알 수 없음'})` });
     }
 
     res.status(200).json(data);
   } catch (error) {
-    // 💡 방어 로직 3: 뭉뚱그린 에러 폐기. 서버가 뻗으면 무조건 자바스크립트 실제 에러 로그를 폰으로 직배송
     res.status(500).json({ error: `서버 오류 상세: ${error.message}` });
   }
 }
