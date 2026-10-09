@@ -50,7 +50,7 @@
     <h2><span class="logo-icon">%</span>할인스카우터</h2>
   </div>
 
-  <!-- 1. 프로필 설정 (API 키 입력란 완벽 제거) -->
+  <!-- 1. 프로필 설정 -->
   <div class="card" id="profile-card">
     <h3>내 맞춤 프로필 설정</h3>
     <div class="form-group">
@@ -147,7 +147,7 @@
       const sharedData = urlParams.get('text') || urlParams.get('title') || urlParams.get('url');
 
       if (sharedData) {
-        // 💡 [핵심] 안드로이드 공유 1회성 버그 해결: 공유받자마자 주소창 꼬리표 삭제
+        // 💡 안드로이드 공유 1회성 버그 해결: 공유받자마자 주소창 꼬리표 삭제
         window.history.replaceState({}, document.title, window.location.pathname);
         
         document.getElementById('profile-card').style.display = 'none';
@@ -178,7 +178,7 @@
       }
     });
 
-    // 🧠 AI 연동 (크레딧 방어형: 딱 1번만 Vercel 서버로 요청)
+    // 🧠 AI 연동 (진짜 에러 코드 추적 버전)
     async function analyzeWithAI_Robust(sharedText, p) {
       const cacheKey = "scouter_cache_v5_" + sharedText.replace(/\s/g, '').substring(0, 50); 
       const cachedData = localStorage.getItem(cacheKey);
@@ -191,6 +191,10 @@
         }
       }
 
+      document.getElementById('ai-loading').innerHTML = `
+        <span style="color:var(--navy); font-size:15px; font-weight:bold;">⚡ VIP 쾌속 분석 중...</span>
+      `;
+
       const pText = `카드:${p.card}, 멤버십:${p.mem}, 통신사:${p.tel}, 신분:${p.stat}`;
 
       try {
@@ -200,10 +204,17 @@
           body: JSON.stringify({ sharedText: sharedText, pText: pText })
         });
         
+        // 💡 에러 발생 시 Vercel 서버가 보낸 에러 내용을 잡아냄
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || `서버 통신 실패 (HTTP 상태 코드: ${response.status})`);
+        }
+
         const data = await response.json();
 
-        if (!response.ok) throw new Error(data.error || "서버 통신 오류");
-        if (!data.candidates || data.candidates.length === 0) throw new Error("데이터 없음");
+        if (!data.candidates || data.candidates.length === 0) {
+          throw new Error("구글 AI가 빈 데이터를 반환했습니다.");
+        }
 
         const parsedJson = JSON.parse(data.candidates[0].content.parts[0].text);
         const tipsHtml = parsedJson.tips.map(tip => `✅ ${tip}`).join('<br>');
@@ -220,10 +231,12 @@
         document.getElementById('ai-analysis-area').innerHTML = finalHtml;
 
       } catch (error) {
-        // 실패 시 무한루프 없이 깔끔하게 에러 메시지 출력 후 종료 (요금 낭비 방지)
+        // 💡 뭉뚱그린 에러가 아닌, 진짜 상세 에러 원인을 화면에 노출
         document.getElementById('ai-analysis-area').innerHTML = `
           <div class="ai-result" style="background:#fce8e6; border:1px solid #d93025; color:#d93025;">
-            <b>❌ 분석 일시 오류</b><br>네트워크 문제로 AI 분석에 실패했습니다. 다시 시도해주세요.
+            <b>❌ 분석 실패 (상세 원인 확인)</b><br>
+            <span style="font-size:14px; color:#333; font-weight:bold; display:block; margin:8px 0;">[에러 내용] ${error.message}</span>
+            <span style="font-size:11px; color:#555;">* Vercel 서버는 10초 이상 응답이 지연되면 강제로 통신을 끊습니다(504). 인터넷 속도 저하(3KB/s 등)가 원인일 수 있습니다.</span>
           </div>
         `;
       }
