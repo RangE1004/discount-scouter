@@ -6,6 +6,7 @@
   <title>할인스카우터</title>
   <link rel="manifest" href="manifest.json">
   <style>
+    /* 모던 화이트 & 네이비 테마 */
     :root {
       --navy: #1b263b;
       --navy-light: #415a77;
@@ -18,6 +19,7 @@
     }
     
     body { padding: 20px 15px; font-family: 'Pretendard', -apple-system, sans-serif; background: var(--bg-color); margin: 0; color: var(--text-main); }
+    
     .header { text-align: center; margin-bottom: 25px; }
     .header h2 { margin: 0; color: var(--navy); font-weight: 800; font-size: 24px; letter-spacing: -0.5px; }
     .logo-icon { display: inline-block; background: var(--navy); color: white; border-radius: 8px; padding: 2px 8px; margin-right: 5px; font-size: 20px; }
@@ -41,7 +43,6 @@
     .ai-result b { color: #a50000; display: block; margin-bottom: 8px; font-size: 15px; }
     
     .loading { color: var(--navy); font-weight: 700; text-align: center; margin: 20px 0; font-size: 15px; }
-    .retry-msg { color: #d93025; font-size: 12px; display: block; margin-top: 8px; font-weight: normal; }
   </style>
 </head>
 <body>
@@ -49,7 +50,7 @@
     <h2><span class="logo-icon">%</span>할인스카우터</h2>
   </div>
 
-  <!-- 1. 프로필 설정 (API 키 입력칸 완전 삭제!) -->
+  <!-- 1. 프로필 설정 (API 키 입력란 완벽 제거) -->
   <div class="card" id="profile-card">
     <h3>내 맞춤 프로필 설정</h3>
     <div class="form-group">
@@ -98,7 +99,7 @@
     <div id="static-db-area"></div>
     <div id="ai-analysis-area">
       <div class="loading" id="ai-loading">
-        ⏳ AI가 추가 혜택을 발굴하고 있습니다...
+        <span style="color:var(--navy); font-size:15px; font-weight:bold;">⚡ VIP 쾌속 분석 중...</span>
       </div>
     </div>
   </div>
@@ -106,6 +107,7 @@
   <script>
     if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
 
+    // 🗂️ 세분화된 고정 DB
     const benefitDB = {
       'coupang': { name: '쿠팡', base: '로켓배송 상품인지 확인하세요.', membership: { 'wow': '🚀 [멤버십] 와우회원 적용: 100% 무료배송 및 와우 전용 즉시할인 적용.' }, card: { 'kb': '💳 [카드] 국민카드: 로켓제휴 최대 20% 즉시할인 가능성.', 'samsung': '💳 [카드] 삼성카드: 쿠팡 결제 시 할인 프로모션 확인.' } },
       'naver': { name: '네이버쇼핑', base: '네이버페이 아이콘이 있는지 확인하세요.', membership: { 'naver': '🟩 [멤버십] 네이버플러스: Npay 결제 시 최대 5% 추가 적립 확정.' }, telecom: { 'lgu': '📱 [통신사] LG U+: 네이버플러스 멤버십 무료 혜택(구독) 연동 가능.' }, card: { 'hyundai': '💳 [카드] 현대카드: 네이버현대카드 결제 시 추가 5% 적립.' } },
@@ -120,7 +122,7 @@
       return 'common';
     }
 
-    // 설정 불러오기 (API 키 삭제)
+    // 설정 불러오기
     document.addEventListener('DOMContentLoaded', () => {
       const fields = ['userCard', 'userMembership', 'userTelecom', 'userStatus'];
       fields.forEach(id => {
@@ -128,6 +130,7 @@
       });
     });
 
+    // 직관적인 저장
     function saveProfile() {
       const fields = ['userCard', 'userMembership', 'userTelecom', 'userStatus'];
       fields.forEach(id => {
@@ -138,11 +141,15 @@
       setTimeout(() => { btn.innerText = "설정 완료"; btn.style.background = "var(--navy)"; }, 2000);
     }
 
+    // 🔗 공유 수신 및 렌더링
     window.addEventListener('DOMContentLoaded', () => {
       const urlParams = new URLSearchParams(window.location.search);
       const sharedData = urlParams.get('text') || urlParams.get('title') || urlParams.get('url');
 
       if (sharedData) {
+        // 💡 [핵심] 안드로이드 공유 1회성 버그 해결: 공유받자마자 주소창 꼬리표 삭제
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
         document.getElementById('profile-card').style.display = 'none';
         document.getElementById('result-card').style.display = 'block';
         document.getElementById('link-text').innerText = "🔗 수신: " + sharedData;
@@ -171,11 +178,9 @@
       }
     });
 
-    // ==========================================
-    // 🧠 클라우드 서버(Vercel)와 통신하는 AI 연동 함수
-    // ==========================================
+    // 🧠 AI 연동 (크레딧 방어형: 딱 1번만 Vercel 서버로 요청)
     async function analyzeWithAI_Robust(sharedText, p) {
-      const cacheKey = "scouter_cache_v3_" + sharedText.replace(/\s/g, '').substring(0, 50); 
+      const cacheKey = "scouter_cache_v5_" + sharedText.replace(/\s/g, '').substring(0, 50); 
       const cachedData = localStorage.getItem(cacheKey);
       
       if (cachedData) {
@@ -183,79 +188,44 @@
         if (((new Date().getTime() - parsedCache.timestamp) / (1000 * 60 * 60)) < 12) {
           document.getElementById('ai-analysis-area').innerHTML = parsedCache.html;
           return; 
-        } else {
-          localStorage.removeItem(cacheKey);
         }
       }
 
-      const loadingPhrases = [
-        "⏳ 내 클라우드 서버와 통신 중...",
-        "🔍 숨겨진 프로모션 찾는 중...",
-        "💳 선택하신 카드 혜택 매칭 중..."
-      ];
-      const aiLoadingEl = document.getElementById('ai-loading');
-      aiLoadingEl.innerHTML = `<span id="ai-loading-text" style="color:var(--navy); font-size:15px; font-weight:bold;">${loadingPhrases[0]}</span>`;
-      
-      let phraseIdx = 0;
-      const loadingInterval = setInterval(() => {
-        phraseIdx = (phraseIdx + 1) % loadingPhrases.length;
-        const textEl = document.getElementById('ai-loading-text');
-        if(textEl) textEl.innerText = loadingPhrases[phraseIdx];
-      }, 2000);
-
       const pText = `카드:${p.card}, 멤버십:${p.mem}, 통신사:${p.tel}, 신분:${p.stat}`;
-      let delay = 5000; 
-      let attempt = 1;
 
-      while (true) {
-        try {
-          // 💡 핵심: 구글을 직접 찌르지 않고, 방금 만든 '내 Vercel 서버(/api/analyze)'를 찌릅니다!
-          const response = await fetch('/api/analyze', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sharedText: sharedText, pText: pText })
-          });
-          
-          const data = await response.json();
+      try {
+        const response = await fetch('/api/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sharedText: sharedText, pText: pText })
+        });
+        
+        const data = await response.json();
 
-          if (!response.ok) {
-            throw new Error(`RETRY:서버 일시 혼잡`);
-          }
+        if (!response.ok) throw new Error(data.error || "서버 통신 오류");
+        if (!data.candidates || data.candidates.length === 0) throw new Error("데이터 없음");
 
-          if (!data.candidates || data.candidates.length === 0 || !data.candidates[0].content) {
-            throw new Error("RETRY:빈 데이터");
-          }
+        const parsedJson = JSON.parse(data.candidates[0].content.parts[0].text);
+        const tipsHtml = parsedJson.tips.map(tip => `✅ ${tip}`).join('<br>');
+        
+        const finalHtml = `
+          <div class="ai-result">
+            <span style="font-size:11px; color:#888; display:block; margin-bottom:8px;">✨ AI 스카우터 분석 완료</span>
+            <b>💰 추가 할인 팁</b><br>${tipsHtml}<br><br>
+            <b>⚠️ 결제 주의사항</b><br>🚨 ${parsedJson.caution}
+          </div>
+        `;
+        
+        localStorage.setItem(cacheKey, JSON.stringify({ html: finalHtml, timestamp: new Date().getTime() }));
+        document.getElementById('ai-analysis-area').innerHTML = finalHtml;
 
-          const parsedJson = JSON.parse(data.candidates[0].content.parts[0].text);
-          const tipsHtml = parsedJson.tips.map(tip => `✅ ${tip}`).join('<br>');
-          const finalHtml = `
-            <div class="ai-result">
-              <span style="font-size:11px; color:#888; display:block; margin-bottom:8px;">✨ 클라우드 서버 분석 완료</span>
-              <b>💰 추가 할인 팁</b><br>${tipsHtml}<br><br>
-              <b>⚠️ 결제 주의사항</b><br>🚨 ${parsedJson.caution}
-            </div>
-          `;
-          
-          localStorage.setItem(cacheKey, JSON.stringify({ html: finalHtml.replace("✨ 클라우드 서버 분석 완료", "⚡ 내 폰에 임시저장된 결과 (0.1초 컷)"), timestamp: new Date().getTime() }));
-          
-          clearInterval(loadingInterval);
-          document.getElementById('ai-analysis-area').innerHTML = finalHtml;
-          break; 
-
-        } catch (error) {
-          if (attempt >= 5) {
-            clearInterval(loadingInterval);
-            document.getElementById('ai-analysis-area').innerHTML = `
-              <div class="ai-result" style="background:#f1f3f5; border:1px solid #ddd; color:#555;">
-                <b>💡 서버 응답 지연</b><br>현재 서버가 혼잡합니다. 상단의 <b>[📌 1차 스카우터 진단]</b>을 확인해주세요.
-              </div>
-            `;
-            break;
-          }
-          attempt++;
-          await new Promise(resolve => setTimeout(resolve, delay));
-          delay = Math.min(delay + 5000, 20000); 
-        }
+      } catch (error) {
+        // 실패 시 무한루프 없이 깔끔하게 에러 메시지 출력 후 종료 (요금 낭비 방지)
+        document.getElementById('ai-analysis-area').innerHTML = `
+          <div class="ai-result" style="background:#fce8e6; border:1px solid #d93025; color:#d93025;">
+            <b>❌ 분석 일시 오류</b><br>네트워크 문제로 AI 분석에 실패했습니다. 다시 시도해주세요.
+          </div>
+        `;
       }
     }
   </script>
