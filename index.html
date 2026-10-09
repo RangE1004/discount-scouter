@@ -3,72 +3,123 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- 💡 앱 이름 변경 -->
   <title>퍼센트</title>
   <link rel="manifest" href="manifest.json">
-  <style>
-    :root { --navy: #1b263b; --navy-light: #415a77; --bg-color: #f8f9fa; --card-bg: #ffffff; --pastel-blue: #e0eaf5; --pastel-red: #fbe5e6; --text-main: #333333; --text-muted: #777777; }
-    body { padding: 20px 15px; font-family: 'Pretendard', -apple-system, sans-serif; background: var(--bg-color); margin: 0; color: var(--text-main); }
-    .header { text-align: center; margin-bottom: 25px; }
-    .header h2 { margin: 0; color: var(--navy); font-weight: 800; font-size: 24px; letter-spacing: -0.5px; }
-    .logo-icon { display: inline-block; background: var(--navy); color: white; border-radius: 8px; padding: 2px 8px; margin-right: 5px; font-size: 20px; }
-    .card { background: var(--card-bg); padding: 25px 20px; border-radius: 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.04); margin-bottom: 20px; }
-    .card h3 { margin-top: 0; color: var(--navy); font-size: 18px; border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; margin-bottom: 20px; }
-    .form-group { margin-bottom: 15px; }
-    label { font-weight: 600; font-size: 13px; color: var(--navy-light); display: block; margin-bottom: 6px; }
-    select, input { width: 100%; padding: 14px; border-radius: 10px; border: 1px solid #e0e0e0; font-size: 15px; box-sizing: border-box; background: #fafafa; transition: border 0.2s; }
-    select:focus, input:focus { outline: none; border-color: var(--navy); background: #fff; }
-    button.save-btn { width: 100%; background: var(--navy); color: white; font-size: 16px; font-weight: bold; border: none; padding: 15px; border-radius: 10px; margin-top: 10px; transition: 0.3s; box-shadow: 0 4px 10px rgba(27, 38, 59, 0.2); }
-    button.save-btn:active { transform: translateY(2px); }
-    .result-link { font-size: 12px; color: var(--text-muted); word-break: break-all; margin-bottom: 15px; background: #f1f3f5; padding: 10px; border-radius: 8px; }
-    .db-result { background: var(--pastel-blue); padding: 16px; border-radius: 12px; margin-bottom: 15px; font-size: 14px; color: #1e3a5f; line-height: 1.6; border: 1px solid #c9dcf0; }
-    .db-result b { color: var(--navy); display: block; margin-bottom: 8px; font-size: 15px; }
-    .ai-result { background: var(--pastel-red); padding: 16px; border-radius: 12px; font-size: 14px; color: #7a1d1d; line-height: 1.6; border: 1px solid #f7c3c5; }
-    .ai-result b { color: #a50000; display: block; margin-bottom: 8px; font-size: 15px; }
-    .loading { color: var(--navy); font-weight: 700; text-align: center; margin: 20px 0; font-size: 15px; }
-  </style>
+  
+  <!-- 🚀 1. 테일윈드 CSS 불러오기 (이 한 줄이 마법의 시작입니다) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- 🎨 2. 테일윈드에 우리 앱만의 전용 색상표(네이비 등) 등록 -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            navy: '#1b263b',
+            'navy-light': '#415a77',
+            'pastel-blue': '#e0eaf5',
+            'pastel-red': '#fbe5e6',
+          },
+          fontFamily: {
+            sans: ['Pretendard', '-apple-system', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
 </head>
-<body>
-  <div class="header">
-    <!-- 💡 로고 아이콘에 % 유지, 직관적인 이름 적용 -->
-    <h2><span class="logo-icon">%</span>몇퍼</h2>
+
+<!-- 💡 테일윈드는 이렇게 태그 안에 'bg-gray-50' (배경 회색) 처럼 직접 단어를 적습니다 -->
+<body class="bg-gray-50 p-5 text-gray-800 font-sans m-0">
+  
+  <div class="text-center mb-6 flex justify-between items-center max-w-[500px] mx-auto">
+    <h2 class="m-0 text-navy font-extrabold text-2xl tracking-tight">
+      <span class="inline-block bg-navy text-white rounded-lg px-2 py-0.5 mr-1 text-xl">%</span>퍼센트
+    </h2>
   </div>
 
-  <div class="card" id="profile-card">
-    <h3>내 맞춤 결제 환경</h3>
-    <div class="form-group"><label>💳 주로 쓰는 카드</label><select id="user-card"><option value="none">선택 안함</option><option value="kb">국민카드</option><option value="shinhan">신한카드</option><option value="hyundai">현대카드</option><option value="samsung">삼성카드</option></select></div>
-    <div class="form-group"><label>👑 구독 중인 멤버십</label><select id="user-membership"><option value="none">가입 안함 (일반)</option><option value="wow">쿠팡 와우회원</option><option value="naver">네이버플러스 멤버십</option><option value="universe">신세계 유니버스 클럽</option></select></div>
-    <div class="form-group"><label>📱 통신사 혜택</label><select id="user-telecom"><option value="none">선택 안함</option><option value="skt">SKT (T멤버십)</option><option value="kt">KT (KT멤버십)</option><option value="lgu">LG U+ (U+멤버십)</option></select></div>
-    <div class="form-group"><label>🎓 신분 혜택</label><select id="user-status"><option value="none">해당 없음 (일반)</option><option value="military">군인</option><option value="student">대학생</option></select></div>
-    <button class="save-btn" id="save-btn" onclick="saveProfile()">저장하기</button>
+  <!-- 1. 프로필 설정 화면 -->
+  <div id="profile-card" class="bg-white p-6 rounded-2xl shadow-sm mb-5 max-w-[500px] mx-auto">
+    <h3 class="mt-0 text-navy text-lg border-b-2 border-gray-100 pb-2.5 mb-5 font-bold">내 맞춤 결제 환경</h3>
+    
+    <div class="mb-4">
+      <label class="font-semibold text-[13px] text-navy-light block mb-1.5">💳 주로 쓰는 카드</label>
+      <select id="user-card" class="w-full p-3.5 rounded-xl border border-gray-200 text-[15px] bg-gray-50 focus:outline-none focus:border-navy focus:bg-white transition-colors cursor-pointer">
+        <option value="none">선택 안함</option>
+        <option value="kb">국민카드</option>
+        <option value="shinhan">신한카드</option>
+        <option value="hyundai">현대카드</option>
+        <option value="samsung">삼성카드</option>
+        <option value="lotte">롯데카드</option>
+        <option value="nh">NH농협카드</option>
+      </select>
+    </div>
+    <div class="mb-4">
+      <label class="font-semibold text-[13px] text-navy-light block mb-1.5">👑 구독 중인 멤버십</label>
+      <select id="user-membership" class="w-full p-3.5 rounded-xl border border-gray-200 text-[15px] bg-gray-50 focus:outline-none focus:border-navy focus:bg-white transition-colors cursor-pointer">
+        <option value="none">가입 안함 (일반)</option>
+        <option value="wow">쿠팡 와우회원</option>
+        <option value="naver">네이버플러스 멤버십</option>
+        <option value="universe">신세계 유니버스 클럽</option>
+        <option value="space">T우주패스</option>
+      </select>
+    </div>
+    <div class="mb-4">
+      <label class="font-semibold text-[13px] text-navy-light block mb-1.5">📱 통신사 혜택</label>
+      <select id="user-telecom" class="w-full p-3.5 rounded-xl border border-gray-200 text-[15px] bg-gray-50 focus:outline-none focus:border-navy focus:bg-white transition-colors cursor-pointer">
+        <option value="none">선택 안함</option>
+        <option value="skt">SKT (T멤버십)</option>
+        <option value="kt">KT (KT멤버십)</option>
+        <option value="lgu">LG U+ (U+멤버십)</option>
+      </select>
+    </div>
+    <div class="mb-4">
+      <label class="font-semibold text-[13px] text-navy-light block mb-1.5">🎓 특화 신분 혜택</label>
+      <select id="user-status" class="w-full p-3.5 rounded-xl border border-gray-200 text-[15px] bg-gray-50 focus:outline-none focus:border-navy focus:bg-white transition-colors cursor-pointer">
+        <option value="none">해당 없음 (일반)</option>
+        <option value="military">군인 / 군가족</option>
+        <option value="student">대학생 (학생복지)</option>
+        <option value="public">공무원 / 교직원</option>
+        <option value="mom">임산부 / 육아맘</option>
+      </select>
+    </div>
+    
+    <button id="save-btn" onclick="saveProfile()" class="w-full bg-navy text-white text-base font-bold border-none p-4 rounded-xl mt-2 transition-all shadow-md active:translate-y-1">저장하기</button>
   </div>
 
-  <div class="card" id="result-card" style="display: none; border: 2px solid var(--navy);">
-    <h3>✨ 맞춤 할인 정보를 찾았어요!</h3>
-    <div class="result-link" id="link-text"></div>
+  <!-- 2. 결과 출력 화면 -->
+  <div id="result-card" class="hidden bg-white p-6 rounded-2xl shadow-sm mb-5 max-w-[500px] mx-auto border-2 border-navy">
+    
+    <!-- 프로필 변경 상단 바 -->
+    <div class="flex justify-between items-center bg-gray-50 p-3 rounded-xl mb-5 shadow-sm border border-gray-100">
+      <span class="text-[14px] font-bold text-navy">⚙️ 맞춤 환경 적용 중</span>
+      <button onclick="openProfileEdit()" class="bg-navy-light text-white border-none py-2 px-3 rounded-lg text-xs font-bold cursor-pointer hover:bg-navy transition-colors">프로필 수정</button>
+    </div>
+
+    <h3 class="mt-0 text-navy text-lg border-b-2 border-gray-100 pb-2.5 mb-5 font-bold">✨ 맞춤 할인 정보를 찾았어요!</h3>
+    <div id="link-text" class="text-xs text-gray-500 break-all mb-4 bg-gray-100 p-3 rounded-lg"></div>
     <div id="static-db-area"></div>
     <div id="ai-analysis-area">
-      <div class="loading" id="ai-loading">
-        <!-- 💡 인간적인 안내 문구 유지 -->
-        <span style="color:var(--navy); font-size:15px; font-weight:bold;">🔍 최적의 결제 조건을 확인하고 있어요... (약 3초)</span>
+      <div id="ai-loading" class="text-navy font-bold text-center my-5 text-[15px]">
+        <span>🔍 최적의 결제 조건을 확인하고 있어요... (약 3초)</span>
       </div>
     </div>
-    <button class="save-btn" style="background:#888; margin-top:20px;" onclick="location.reload()">새로운 상품 분석하기</button>
+    <button onclick="location.reload()" class="w-full bg-gray-400 text-white text-base font-bold border-none p-4 rounded-xl mt-5 transition-all shadow-md active:translate-y-1">새로운 상품 분석하기</button>
   </div>
 
   <script>
     if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
 
-    // 🗂️ 한국 주요 쇼핑앱 확장 데이터 유지
+    // 개발자 전용 DB
     const benefitDB = {
-      'coupang': { name: '쿠팡', base: '장바구니에 담아두고 가격 변동을 지켜보거나, 정기배송 할인을 확인해 보세요.', membership: { 'wow': '🚀 [와우회원] 100% 무료배송 및 와우 전용 즉시 할인이 적용됩니다.' }, card: { 'kb': '💳 [국민카드] 로켓제휴 카테고리 최대 20% 즉시할인 여부를 확인하세요.', 'samsung': '💳 [삼성카드] 쿠팡 결제 시 추가 할인 프로모션이 잦습니다.' } },
-      'naver': { name: '네이버쇼핑', base: '상품페이지 하단에 Npay 추가 적립 배너가 있는지 확인하세요.', membership: { 'naver': '🟩 [네이버플러스] Npay 결제 시 최대 5% 추가 적립이 확정됩니다.' }, telecom: { 'lgu': '📱 [LG U+] 멤버십 혜택으로 네이버플러스 구독료 무료 연동이 가능합니다.' }, card: { 'hyundai': '💳 [현대카드] 네이버현대카드 결제 시 5% 추가 적립됩니다.' } },
-      '11st': { name: '11번가', base: '결제 전 T멤버십 적용 버튼을 눌러보세요.', telecom: { 'skt': '📱 [SKT] T멤버십으로 최대 11% 할인(또는 적립)을 꼭 챙기세요.' }, membership: { 'universe': '👑 [유니버스 클럽] 11번가 전용 할인 쿠폰팩을 다운로드하세요.' } },
-      'musinsa': { name: '무신사', base: '구매 전 반드시 등급 할인과 장바구니 쿠폰을 중복 적용하세요.', card: { 'hyundai': '💳 [현대카드] 무신사 현대카드로 결제 시 5% 청구 할인이 가능합니다.' } },
-      'oliveyoung': { name: '올리브영', base: '오늘드림(당일배송)이 더 저렴한 경우가 있으니 배송비까지 합산해 비교해 보세요.' },
-      'ssg': { name: 'SSG닷컴', base: '이마트몰 합배송(쓱배송)을 이용하면 배송비를 절약할 수 있습니다.', membership: { 'universe': '👑 [유니버스 클럽] 매월 지급되는 5%~7% 할인 쿠폰을 적용하세요.' } },
-      'kurly': { name: '마켓컬리', base: '카카오페이나 토스페이 결제 시 즉시 할인되는 프로모션이 있는지 확인하세요.' },
-      'common': { name: '쇼핑몰', base: '신규 가입 쿠폰이나 카카오페이 결제 혜택을 먼저 찾아보는 것을 추천합니다.', status: { 'military': '🎖️ [군인 복지 팁] 군인 복지몰(영외마트 등)에 같은 상품이 더 싼지 먼저 검색해 보세요.' } }
+      'coupang': { name: '쿠팡', base: '로켓배송 상품인지 확인하고, 장바구니 담기 후 정기배송(5~10% 할인) 가능 품목인지 살펴보세요.', membership: { 'wow': '🚀 [와우회원 공식 혜택] 로켓배송 상품 100% 무료배송 및 와우 전용 즉시 할인가 적용.' }, card: { 'kb': '💳 [국민카드] KB국민 체크/신용카드 결제 시 연계 프로모션 할인 여부를 확인하세요.', 'samsung': '💳 [삼성카드] 쿠팡 제휴 및 결제 할인 이벤트 적용 대상인지 확인하세요.' } },
+      'naver': { name: '네이버쇼핑', base: '상품페이지 하단에 Npay 추가 적립 마크나 간편결제 이벤트 배너가 있는지 확인하세요.', membership: { 'naver': '🟩 [네이버플러스 공식 혜택] 네이버페이로 결제 시 기본 최대 5% 추가 적립이 적용됩니다.' }, card: { 'hyundai': '💳 [네이버 현대카드] 결제 시 상시 5% 네이버페이 추가 적립 혜택이 적용됩니다.' } },
+      '11st': { name: '11번가', base: '결제 직전 T멤버십 할인/적립 적용 버튼을 반드시 눌러 확인하세요.', telecom: { 'skt': '📱 [SKT T멤버십] 결제 금액의 최대 11% 할인 또는 적립 혜택을 이용할 수 있습니다.' }, membership: { 'space': '🪐 [T우주패스] 아마존 무료배송 및 11번가 쇼핑 포인트/쿠폰 혜택이 연동됩니다.' } },
+      'musinsa': { name: '무신사', base: '회원 등급별 상시 할인율과 장바구니 쿠폰, 적립금 선할인을 중복 적용해 보세요.', card: { 'hyundai': '💳 [무신사 현대카드] 카드 결제 시 5% 청구 할인 혜택이 제공됩니다.' } },
+      'oliveyoung': { name: '올리브영', base: '당일 배송인 \'오늘드림\' 서비스와 매장 픽업 서비스의 가격 및 배송비를 비교해 보세요.', telecom: { 'kt': '📱 [KT VIP/VVIP] 멤버십 포인트 차감으로 올리브영 1만원 할인 혜택을 활용할 수 있습니다.' } },
+      'ssg': { name: 'SSG닷컴', base: '이마트 쓱배송 상품과 합배송 조건을 맞추어 배송비를 절약하세요.', membership: { 'universe': '👑 [신세계 유니버스] 스마일클럽/유니버스 전용 5~7% 할인 쿠폰을 적용하세요.' } },
+      'kurly': { name: '마켓컬리', base: '카카오페이 또는 토스페이 간편결제 시 제공되는 선착순 즉시 할인 프로모션을 확인하세요.' },
+      'common': { name: '쇼핑몰', base: '신규 가입 웰컴 쿠폰이나 간편결제(카카오페이, 네이버페이 등) 즉시 할인 이벤트가 있는지 확인하세요.', status: { 'military': '🎖️ [군 복지] 군인 복지몰(국군복지단 등)에 동일 상품이 면세가로 있는지 비교해 보세요.', 'public': '🏢 [공직자] 공무원연금매장 및 교직원공제회 복지몰 가격과 비교해 보세요.', 'student': '🎓 [학생] 학생복지스토어나 각 브랜드 공식 교육할인몰 가격인지 확인하세요.' } }
     };
 
     function detectPlatform(text) {
@@ -85,21 +136,34 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       ['userCard', 'userMembership', 'userTelecom', 'userStatus'].forEach(id => {
-        if(localStorage.getItem(id)) document.getElementById(id.replace(/([A-Z])/g, "-$1").toLowerCase()).value = localStorage.getItem(id);
+        const savedVal = localStorage.getItem(id);
+        if(savedVal) {
+          const el = document.getElementById(id.replace(/([A-Z])/g, "-$1").toLowerCase());
+          if(el) el.value = savedVal;
+        }
       });
       processSharedData(); 
     });
 
     function saveProfile() {
       ['userCard', 'userMembership', 'userTelecom', 'userStatus'].forEach(id => {
-        localStorage.setItem(id, document.getElementById(id.replace(/([A-Z])/g, "-$1").toLowerCase()).value);
+        const el = document.getElementById(id.replace(/([A-Z])/g, "-$1").toLowerCase());
+        if(el) localStorage.setItem(id, el.value);
       });
       const btn = document.getElementById('save-btn');
-      btn.innerText = "✅ 저장되었습니다!"; btn.style.background = "#28a745";
-      setTimeout(() => { btn.innerText = "저장하기"; btn.style.background = "var(--navy)"; }, 2000);
+      btn.innerText = "✅ 저장되었습니다!"; 
+      btn.classList.replace('bg-navy', 'bg-green-600');
+      setTimeout(() => { 
+        btn.innerText = "저장하기"; 
+        btn.classList.replace('bg-green-600', 'bg-navy');
+      }, 2000);
     }
 
-    // 💡 URL 공유 후 앱을 끄지 않고 또 공유했을 때(연속 동작) 작동하는 핵심 로직 유지
+    function openProfileEdit() {
+      document.getElementById('result-card').classList.add('hidden');
+      document.getElementById('profile-card').classList.remove('hidden');
+    }
+
     function processSharedData() {
       const urlParams = new URLSearchParams(window.location.search);
       const sharedData = urlParams.get('text') || urlParams.get('title') || urlParams.get('url');
@@ -107,40 +171,47 @@
       if (sharedData) {
         window.history.replaceState({}, document.title, window.location.pathname);
         
-        document.getElementById('profile-card').style.display = 'none';
-        document.getElementById('result-card').style.display = 'block';
+        document.getElementById('profile-card').classList.add('hidden');
+        document.getElementById('result-card').classList.remove('hidden');
         
         const shortData = sharedData.length > 50 ? sharedData.substring(0, 50) + "..." : sharedData;
         document.getElementById('link-text').innerText = "🔗 확인 중인 상품: " + shortData;
 
-        const p = { card: localStorage.getItem('userCard') || 'none', mem: localStorage.getItem('userMembership') || 'none', tel: localStorage.getItem('userTelecom') || 'none', stat: localStorage.getItem('userStatus') || 'none' };
+        const p = { 
+          card: localStorage.getItem('userCard') || 'none', 
+          mem: localStorage.getItem('userMembership') || 'none', 
+          tel: localStorage.getItem('userTelecom') || 'none', 
+          stat: localStorage.getItem('userStatus') || 'none'
+        };
+
         const platform = detectPlatform(sharedData);
         const db = benefitDB[platform];
 
-        let staticHtml = `<b>📌 [${db.name}] 기본 할인 팁</b><br><br>${db.base}<br><br>`;
+        // 💡 테일윈드 클래스가 적용된 HTML 주입
+        let staticHtml = `<b class="text-navy block mb-2 text-[15px]">📌 [${db.name}] 기본 확인 팁</b>${db.base}<br><br>`;
         let hasBenefit = false;
         if(db.membership && db.membership[p.mem]) { staticHtml += db.membership[p.mem] + "<br>"; hasBenefit = true; }
         if(db.telecom && db.telecom[p.tel]) { staticHtml += db.telecom[p.tel] + "<br>"; hasBenefit = true; }
         if(db.card && db.card[p.card]) { staticHtml += db.card[p.card] + "<br>"; hasBenefit = true; }
         if(db.status && db.status[p.stat]) { staticHtml += db.status[p.stat] + "<br>"; hasBenefit = true; }
-        if(!hasBenefit) { staticHtml += "설정하신 맞춤 정보에 해당하는 추가 혜택은 없습니다."; }
         
-        document.getElementById('static-db-area').innerHTML = `<div class="db-result">${staticHtml}</div>`;
+        if(!hasBenefit) { staticHtml += "설정하신 맞춤 정보에 해당하는 추가 공식 혜택은 없습니다."; }
+        
+        document.getElementById('static-db-area').innerHTML = `<div class="bg-pastel-blue p-4 rounded-xl mb-4 text-[14px] text-[#1e3a5f] leading-relaxed border border-[#c9dcf0]">${staticHtml}</div>`;
 
         analyzeWithAI_Robust(sharedData, p);
       }
     }
 
-    // 💡 화면이 다시 보여질 때(다른 앱에서 돌아왔을 때) 연속 공유를 감지하는 로직
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') {
         processSharedData();
       }
     });
 
-    // 💡 완벽하게 에러를 방어하는 무적의 AI 파싱 로직 유지
     async function analyzeWithAI_Robust(sharedText, p) {
-      document.getElementById('ai-loading').innerHTML = `<span style="color:var(--navy); font-size:15px; font-weight:bold;">🔍 최적의 결제 조건을 확인하고 있어요... (약 3초)</span>`;
+      document.getElementById('ai-loading').innerHTML = `<span class="text-navy font-bold text-[15px]">🔍 최적의 결제 조건을 확인하고 있어요... (약 3초)</span>`;
+      
       const pText = `카드:${p.card}, 멤버십:${p.mem}, 통신사:${p.tel}, 신분:${p.stat}`;
 
       try {
@@ -175,7 +246,7 @@
           
         } catch (parseError) {
           let readableText = rawText
-            .replace(/\{"tips":\s*\[/g, '')              .replace(/"caution":/g, '<br><br><b>⚠️ 결제 전 주의사항</b><br>🚨')             .replace(/["\]}]/g, '') 
+            .replace(/\{"tips":\s*\[/g, '')              .replace(/"caution":/g, '<br><br><b class="text-[#a50000] block mb-2 text-[15px]">⚠️ 결제 전 주의사항</b>🚨')              .replace(/["\]}]/g, '') 
             .replace(/,/g, '<br><br>✅ ') 
             .trim();
           
@@ -185,18 +256,19 @@
           cautionText = "할인 정보 요약 완료";
         }
         
+        // 💡 테일윈드 클래스가 적용된 AI 결과 HTML 주입
         document.getElementById('ai-analysis-area').innerHTML = `
-          <div class="ai-result">
-            <span style="font-size:11px; color:#888; display:block; margin-bottom:8px;">✨ AI가 찾은 추가 혜택</span>
-            <b>💰 이렇게 결제하는 걸 추천해요</b><br><br>${tipsHtml}<br><br>
-            <b>⚠️ 결제 전 주의사항</b><br><br>🚨 ${cautionText}
+          <div class="bg-pastel-red p-4 rounded-xl text-[14px] text-[#7a1d1d] leading-relaxed border border-[#f7c3c5]">
+            <span class="text-[11px] text-gray-500 block mb-2">✨ AI가 찾은 추가 혜택</span>
+            <b class="text-[#a50000] block mb-2 text-[15px]">💰 이렇게 결제하는 걸 추천해요</b>${tipsHtml}<br><br>
+            <b class="text-[#a50000] block mb-2 text-[15px]">⚠️ 결제 전 주의사항</b>🚨 ${cautionText}
           </div>
         `;
       } catch (error) {
         document.getElementById('ai-analysis-area').innerHTML = `
-          <div class="ai-result" style="background:#fce8e6; border:1px solid #d93025; color:#d93025;">
-            <b>❌ 일시적인 연결 문제</b><br>
-            <span style="font-size:13px; color:#555; display:block; margin:8px 0;">인터넷이 불안정하거나 정보가 너무 많아 확인이 지연되었습니다. [새로운 상품 분석하기] 버튼을 눌러 다시 시도해 주세요.</span>
+          <div class="bg-[#fce8e6] border border-[#d93025] text-[#d93025] p-4 rounded-xl text-[14px] leading-relaxed">
+            <b class="block mb-2 text-[15px]">❌ 일시적인 연결 문제</b>
+            <span class="text-[13px] text-gray-700 block mb-2">인터넷이 불안정하거나 정보가 너무 많아 확인이 지연되었습니다. [새로운 상품 분석하기] 버튼을 눌러 다시 시도해 주세요.</span>
           </div>
         `;
       }
