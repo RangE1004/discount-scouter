@@ -3,7 +3,7 @@ const urlsToCache = [
   './',
   './index.html',
   './manifest.json',
-  './icon.svg'
+  './icon.png'
 ];
 
 // 앱 설치 시 캐시 저장 (오프라인 구동 및 정식 앱 인식용)
