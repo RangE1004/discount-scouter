@@ -6,93 +6,39 @@
   <title>할인스카우터</title>
   <link rel="manifest" href="manifest.json">
   <style>
-    /* 모던 화이트 & 네이비 테마 */
-    :root {
-      --navy: #1b263b;
-      --navy-light: #415a77;
-      --bg-color: #f8f9fa;
-      --card-bg: #ffffff;
-      --pastel-blue: #e0eaf5;
-      --pastel-red: #fbe5e6;
-      --text-main: #333333;
-      --text-muted: #777777;
-    }
-    
+    :root { --navy: #1b263b; --navy-light: #415a77; --bg-color: #f8f9fa; --card-bg: #ffffff; --pastel-blue: #e0eaf5; --pastel-red: #fbe5e6; --text-main: #333333; --text-muted: #777777; }
     body { padding: 20px 15px; font-family: 'Pretendard', -apple-system, sans-serif; background: var(--bg-color); margin: 0; color: var(--text-main); }
-    
     .header { text-align: center; margin-bottom: 25px; }
     .header h2 { margin: 0; color: var(--navy); font-weight: 800; font-size: 24px; letter-spacing: -0.5px; }
     .logo-icon { display: inline-block; background: var(--navy); color: white; border-radius: 8px; padding: 2px 8px; margin-right: 5px; font-size: 20px; }
-    
     .card { background: var(--card-bg); padding: 25px 20px; border-radius: 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.04); margin-bottom: 20px; }
     .card h3 { margin-top: 0; color: var(--navy); font-size: 18px; border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; margin-bottom: 20px; }
-    
     .form-group { margin-bottom: 15px; }
     label { font-weight: 600; font-size: 13px; color: var(--navy-light); display: block; margin-bottom: 6px; }
     select, input { width: 100%; padding: 14px; border-radius: 10px; border: 1px solid #e0e0e0; font-size: 15px; box-sizing: border-box; background: #fafafa; transition: border 0.2s; }
     select:focus, input:focus { outline: none; border-color: var(--navy); background: #fff; }
-    
     button.save-btn { width: 100%; background: var(--navy); color: white; font-size: 16px; font-weight: bold; border: none; padding: 15px; border-radius: 10px; margin-top: 10px; transition: 0.3s; box-shadow: 0 4px 10px rgba(27, 38, 59, 0.2); }
     button.save-btn:active { transform: translateY(2px); }
-    
     .result-link { font-size: 12px; color: var(--text-muted); word-break: break-all; margin-bottom: 15px; background: #f1f3f5; padding: 10px; border-radius: 8px; }
     .db-result { background: var(--pastel-blue); padding: 16px; border-radius: 12px; margin-bottom: 15px; font-size: 14px; color: #1e3a5f; line-height: 1.6; border: 1px solid #c9dcf0; }
     .db-result b { color: var(--navy); display: block; margin-bottom: 8px; font-size: 15px; }
-    
     .ai-result { background: var(--pastel-red); padding: 16px; border-radius: 12px; font-size: 14px; color: #7a1d1d; line-height: 1.6; border: 1px solid #f7c3c5; }
     .ai-result b { color: #a50000; display: block; margin-bottom: 8px; font-size: 15px; }
-    
     .loading { color: var(--navy); font-weight: 700; text-align: center; margin: 20px 0; font-size: 15px; }
   </style>
 </head>
 <body>
-  <div class="header">
-    <h2><span class="logo-icon">%</span>할인스카우터</h2>
-  </div>
+  <div class="header"><h2><span class="logo-icon">%</span>할인스카우터</h2></div>
 
-  <!-- 1. 프로필 설정 -->
   <div class="card" id="profile-card">
     <h3>내 맞춤 프로필 설정</h3>
-    <div class="form-group">
-      <label>💳 주력 결제 카드</label>
-      <select id="user-card">
-        <option value="none">선택 안함</option>
-        <option value="kb">국민카드</option>
-        <option value="shinhan">신한카드</option>
-        <option value="hyundai">현대카드</option>
-        <option value="samsung">삼성카드</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label>👑 유료 멤버십 가입</label>
-      <select id="user-membership">
-        <option value="none">가입 안함 (일반)</option>
-        <option value="wow">쿠팡 와우회원 (무료배송)</option>
-        <option value="naver">네이버플러스 멤버십 (추가적립)</option>
-        <option value="universe">신세계 유니버스 클럽</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label>📱 통신사 혜택</label>
-      <select id="user-telecom">
-        <option value="none">선택 안함</option>
-        <option value="skt">SKT (T멤버십)</option>
-        <option value="kt">KT (KT멤버십)</option>
-        <option value="lgu">LG U+ (U+멤버십)</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label>🎓 특정 신분</label>
-      <select id="user-status">
-        <option value="none">해당 없음 (일반)</option>
-        <option value="military">군인</option>
-        <option value="student">대학생</option>
-      </select>
-    </div>
+    <div class="form-group"><label>💳 주력 결제 카드</label><select id="user-card"><option value="none">선택 안함</option><option value="kb">국민카드</option><option value="shinhan">신한카드</option><option value="hyundai">현대카드</option><option value="samsung">삼성카드</option></select></div>
+    <div class="form-group"><label>👑 유료 멤버십 가입</label><select id="user-membership"><option value="none">가입 안함 (일반)</option><option value="wow">쿠팡 와우회원 (무료배송)</option><option value="naver">네이버플러스 멤버십 (추가적립)</option><option value="universe">신세계 유니버스 클럽</option></select></div>
+    <div class="form-group"><label>📱 통신사 혜택</label><select id="user-telecom"><option value="none">선택 안함</option><option value="skt">SKT (T멤버십)</option><option value="kt">KT (KT멤버십)</option><option value="lgu">LG U+ (U+멤버십)</option></select></div>
+    <div class="form-group"><label>🎓 특정 신분</label><select id="user-status"><option value="none">해당 없음 (일반)</option><option value="military">군인</option><option value="student">대학생</option></select></div>
     <button class="save-btn" id="save-btn" onclick="saveProfile()">설정 완료</button>
   </div>
 
-  <!-- 2. 분석 결과 -->
   <div class="card" id="result-card" style="display: none; border: 2px solid var(--navy);">
     <h3>🎯 스카우터 타겟팅 완료</h3>
     <div class="result-link" id="link-text"></div>
@@ -107,12 +53,11 @@
   <script>
     if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
 
-    // 🗂️ 세분화된 고정 DB
     const benefitDB = {
-      'coupang': { name: '쿠팡', base: '로켓배송 상품인지 확인하세요.', membership: { 'wow': '🚀 [멤버십] 와우회원 적용: 100% 무료배송 및 와우 전용 즉시할인 적용.' }, card: { 'kb': '💳 [카드] 국민카드: 로켓제휴 최대 20% 즉시할인 가능성.', 'samsung': '💳 [카드] 삼성카드: 쿠팡 결제 시 할인 프로모션 확인.' } },
-      'naver': { name: '네이버쇼핑', base: '네이버페이 아이콘이 있는지 확인하세요.', membership: { 'naver': '🟩 [멤버십] 네이버플러스: Npay 결제 시 최대 5% 추가 적립 확정.' }, telecom: { 'lgu': '📱 [통신사] LG U+: 네이버플러스 멤버십 무료 혜택(구독) 연동 가능.' }, card: { 'hyundai': '💳 [카드] 현대카드: 네이버현대카드 결제 시 추가 5% 적립.' } },
-      '11st': { name: '11번가', base: 'T멤버십 적용 아이콘이 있는지 확인하세요.', telecom: { 'skt': '📱 [통신사] SKT: T멤버십 최대 11% 할인(또는 적립) 무조건 적용하세요.' }, membership: { 'universe': '👑 [멤버십] 유니버스 클럽: 11번가 전용 할인 쿠폰 팩 다운로드 필수.' } },
-      'common': { name: '기타 쇼핑몰', base: '신규 가입 웰컴 쿠폰이나 카카오페이 결제 혜택을 먼저 찾아보세요.', status: { 'military': '🎖️ [군인] 복지몰(나라사랑포털 등)에 같은 상품이 더 싼지 먼저 검색하세요.' } }
+      'coupang': { name: '쿠팡', base: '로켓배송 상품인지 확인하세요.', membership: { 'wow': '🚀 [멤버십] 와우회원 적용: 100% 무료배송 및 즉시할인.' }, card: { 'kb': '💳 [카드] 국민카드: 로켓제휴 최대 20% 즉시할인 가능성.', 'samsung': '💳 [카드] 삼성카드: 쿠팡 결제 할인 프로모션.' } },
+      'naver': { name: '네이버쇼핑', base: '네이버페이 아이콘이 있는지 확인하세요.', membership: { 'naver': '🟩 [멤버십] 네이버플러스: Npay 결제 최대 5% 추가 적립.' }, telecom: { 'lgu': '📱 [통신사] LG U+: 멤버십 무료 혜택 연동 가능.' }, card: { 'hyundai': '💳 [카드] 현대카드: 네이버현대카드 결제 추가 5% 적립.' } },
+      '11st': { name: '11번가', base: 'T멤버십 적용 아이콘이 있는지 확인하세요.', telecom: { 'skt': '📱 [통신사] SKT: T멤버십 최대 11% 할인 무조건 적용.' }, membership: { 'universe': '👑 [멤버십] 유니버스 클럽: 전용 할인 쿠폰.' } },
+      'common': { name: '기타 쇼핑몰', base: '신규 가입 쿠폰이나 카카오페이 결제 혜택을 확인하세요.', status: { 'military': '🎖️ [군인] 복지몰에 같은 상품이 더 싼지 먼저 검색하세요.' } }
     };
 
     function detectPlatform(text) {
@@ -122,18 +67,14 @@
       return 'common';
     }
 
-    // 설정 불러오기
     document.addEventListener('DOMContentLoaded', () => {
-      const fields = ['userCard', 'userMembership', 'userTelecom', 'userStatus'];
-      fields.forEach(id => {
+      ['userCard', 'userMembership', 'userTelecom', 'userStatus'].forEach(id => {
         if(localStorage.getItem(id)) document.getElementById(id.replace(/([A-Z])/g, "-$1").toLowerCase()).value = localStorage.getItem(id);
       });
     });
 
-    // 직관적인 저장
     function saveProfile() {
-      const fields = ['userCard', 'userMembership', 'userTelecom', 'userStatus'];
-      fields.forEach(id => {
+      ['userCard', 'userMembership', 'userTelecom', 'userStatus'].forEach(id => {
         localStorage.setItem(id, document.getElementById(id.replace(/([A-Z])/g, "-$1").toLowerCase()).value);
       });
       const btn = document.getElementById('save-btn');
@@ -141,26 +82,18 @@
       setTimeout(() => { btn.innerText = "설정 완료"; btn.style.background = "var(--navy)"; }, 2000);
     }
 
-    // 🔗 공유 수신 및 렌더링
     window.addEventListener('DOMContentLoaded', () => {
       const urlParams = new URLSearchParams(window.location.search);
       const sharedData = urlParams.get('text') || urlParams.get('title') || urlParams.get('url');
 
       if (sharedData) {
-        // 💡 안드로이드 공유 1회성 버그 해결: 공유받자마자 주소창 꼬리표 삭제
         window.history.replaceState({}, document.title, window.location.pathname);
         
         document.getElementById('profile-card').style.display = 'none';
         document.getElementById('result-card').style.display = 'block';
         document.getElementById('link-text').innerText = "🔗 수신: " + sharedData;
 
-        const p = {
-          card: localStorage.getItem('userCard') || 'none',
-          mem: localStorage.getItem('userMembership') || 'none',
-          tel: localStorage.getItem('userTelecom') || 'none',
-          stat: localStorage.getItem('userStatus') || 'none'
-        };
-        
+        const p = { card: localStorage.getItem('userCard') || 'none', mem: localStorage.getItem('userMembership') || 'none', tel: localStorage.getItem('userTelecom') || 'none', stat: localStorage.getItem('userStatus') || 'none' };
         const platform = detectPlatform(sharedData.toLowerCase());
         const db = benefitDB[platform];
 
@@ -178,23 +111,7 @@
       }
     });
 
-    // 🧠 AI 연동 (진짜 에러 코드 추적 버전)
     async function analyzeWithAI_Robust(sharedText, p) {
-      const cacheKey = "scouter_cache_v5_" + sharedText.replace(/\s/g, '').substring(0, 50); 
-      const cachedData = localStorage.getItem(cacheKey);
-      
-      if (cachedData) {
-        const parsedCache = JSON.parse(cachedData);
-        if (((new Date().getTime() - parsedCache.timestamp) / (1000 * 60 * 60)) < 12) {
-          document.getElementById('ai-analysis-area').innerHTML = parsedCache.html;
-          return; 
-        }
-      }
-
-      document.getElementById('ai-loading').innerHTML = `
-        <span style="color:var(--navy); font-size:15px; font-weight:bold;">⚡ VIP 쾌속 분석 중...</span>
-      `;
-
       const pText = `카드:${p.card}, 멤버십:${p.mem}, 통신사:${p.tel}, 신분:${p.stat}`;
 
       try {
@@ -204,39 +121,30 @@
           body: JSON.stringify({ sharedText: sharedText, pText: pText })
         });
         
-        // 💡 에러 발생 시 Vercel 서버가 보낸 에러 내용을 잡아냄
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.error || `서버 통신 실패 (HTTP 상태 코드: ${response.status})`);
+          throw new Error(errorData.error || `서버 응답 실패 (코드: ${response.status})`);
         }
 
         const data = await response.json();
-
-        if (!data.candidates || data.candidates.length === 0) {
-          throw new Error("구글 AI가 빈 데이터를 반환했습니다.");
-        }
+        if (!data.candidates || data.candidates.length === 0) throw new Error("구글 AI 데이터가 비어있습니다.");
 
         const parsedJson = JSON.parse(data.candidates[0].content.parts[0].text);
         const tipsHtml = parsedJson.tips.map(tip => `✅ ${tip}`).join('<br>');
         
-        const finalHtml = `
+        document.getElementById('ai-analysis-area').innerHTML = `
           <div class="ai-result">
             <span style="font-size:11px; color:#888; display:block; margin-bottom:8px;">✨ AI 스카우터 분석 완료</span>
             <b>💰 추가 할인 팁</b><br>${tipsHtml}<br><br>
             <b>⚠️ 결제 주의사항</b><br>🚨 ${parsedJson.caution}
           </div>
         `;
-        
-        localStorage.setItem(cacheKey, JSON.stringify({ html: finalHtml, timestamp: new Date().getTime() }));
-        document.getElementById('ai-analysis-area').innerHTML = finalHtml;
-
       } catch (error) {
-        // 💡 뭉뚱그린 에러가 아닌, 진짜 상세 에러 원인을 화면에 노출
         document.getElementById('ai-analysis-area').innerHTML = `
           <div class="ai-result" style="background:#fce8e6; border:1px solid #d93025; color:#d93025;">
-            <b>❌ 분석 실패 (상세 원인 확인)</b><br>
+            <b>❌ 분석 실패 (상세 원인)</b><br>
             <span style="font-size:14px; color:#333; font-weight:bold; display:block; margin:8px 0;">[에러 내용] ${error.message}</span>
-            <span style="font-size:11px; color:#555;">* Vercel 서버는 10초 이상 응답이 지연되면 강제로 통신을 끊습니다(504). 인터넷 속도 저하(3KB/s 등)가 원인일 수 있습니다.</span>
+            <span style="font-size:11px; color:#555;">* 504 에러일 경우 인터넷 지연 문제일 확률이 높습니다.</span>
           </div>
         `;
       }
