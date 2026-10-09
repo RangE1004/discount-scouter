@@ -6,7 +6,6 @@
   <title>할인스카우터</title>
   <link rel="manifest" href="manifest.json">
   <style>
-    /* 모던 화이트 & 네이비 테마 */
     :root {
       --navy: #1b263b;
       --navy-light: #415a77;
@@ -20,26 +19,21 @@
     
     body { padding: 20px 15px; font-family: 'Pretendard', -apple-system, sans-serif; background: var(--bg-color); margin: 0; color: var(--text-main); }
     
-    /* 헤더 로고 */
     .header { text-align: center; margin-bottom: 25px; }
     .header h2 { margin: 0; color: var(--navy); font-weight: 800; font-size: 24px; letter-spacing: -0.5px; }
     .logo-icon { display: inline-block; background: var(--navy); color: white; border-radius: 8px; padding: 2px 8px; margin-right: 5px; font-size: 20px; }
     
-    /* 카드 디자인 */
     .card { background: var(--card-bg); padding: 25px 20px; border-radius: 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.04); margin-bottom: 20px; }
     .card h3 { margin-top: 0; color: var(--navy); font-size: 18px; border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; margin-bottom: 20px; }
     
-    /* 폼 요소 */
     .form-group { margin-bottom: 15px; }
     label { font-weight: 600; font-size: 13px; color: var(--navy-light); display: block; margin-bottom: 6px; }
     select, input { width: 100%; padding: 14px; border-radius: 10px; border: 1px solid #e0e0e0; font-size: 15px; box-sizing: border-box; background: #fafafa; transition: border 0.2s; }
     select:focus, input:focus { outline: none; border-color: var(--navy); background: #fff; }
     
-    /* 버튼 */
     button.save-btn { width: 100%; background: var(--navy); color: white; font-size: 16px; font-weight: bold; border: none; padding: 15px; border-radius: 10px; margin-top: 10px; transition: 0.3s; box-shadow: 0 4px 10px rgba(27, 38, 59, 0.2); }
     button.save-btn:active { transform: translateY(2px); }
     
-    /* 분석 결과창 */
     .result-link { font-size: 12px; color: var(--text-muted); word-break: break-all; margin-bottom: 15px; background: #f1f3f5; padding: 10px; border-radius: 8px; }
     
     .db-result { background: var(--pastel-blue); padding: 16px; border-radius: 12px; margin-bottom: 15px; font-size: 14px; color: #1e3a5f; line-height: 1.6; border: 1px solid #c9dcf0; }
@@ -57,15 +51,12 @@
     <h2><span class="logo-icon">%</span>할인스카우터</h2>
   </div>
 
-  <!-- 1. 프로필 & 보안 설정 -->
   <div class="card" id="profile-card">
     <h3>내 맞춤 프로필 설정</h3>
-    
     <div class="form-group">
       <label>🔑 보안 API 키 (최초 1회 폰에만 저장)</label>
       <input type="password" id="api-key" placeholder="AQ. 으로 시작하는 키 입력">
     </div>
-
     <div class="form-group">
       <label>💳 주력 결제 카드</label>
       <select id="user-card">
@@ -76,7 +67,6 @@
         <option value="samsung">삼성카드</option>
       </select>
     </div>
-
     <div class="form-group">
       <label>👑 유료 멤버십 가입</label>
       <select id="user-membership">
@@ -86,7 +76,6 @@
         <option value="universe">신세계 유니버스 클럽</option>
       </select>
     </div>
-
     <div class="form-group">
       <label>📱 통신사 혜택</label>
       <select id="user-telecom">
@@ -96,7 +85,6 @@
         <option value="lgu">LG U+ (U+멤버십)</option>
       </select>
     </div>
-
     <div class="form-group">
       <label>🎓 특정 신분</label>
       <select id="user-status">
@@ -105,20 +93,16 @@
         <option value="student">대학생</option>
       </select>
     </div>
-    
     <button class="save-btn" id="save-btn" onclick="saveProfile()">설정 완료</button>
   </div>
 
-  <!-- 2. 분석 결과 -->
   <div class="card" id="result-card" style="display: none; border: 2px solid var(--navy);">
     <h3>🎯 스카우터 타겟팅 완료</h3>
     <div class="result-link" id="link-text"></div>
-    
     <div id="static-db-area"></div>
     <div id="ai-analysis-area">
       <div class="loading" id="ai-loading">
         ⏳ AI가 추가 혜택을 발굴하고 있습니다...
-        <span class="retry-msg" id="ai-retry-msg"></span>
       </div>
     </div>
   </div>
@@ -126,9 +110,6 @@
   <script>
     if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
 
-    // ==========================================
-    // 🗂️ 세분화된 고정 DB
-    // ==========================================
     const benefitDB = {
       'coupang': {
         name: '쿠팡',
@@ -163,7 +144,6 @@
       return 'common';
     }
 
-    // 설정 불러오기
     document.addEventListener('DOMContentLoaded', () => {
       const fields = ['apiKey', 'userCard', 'userMembership', 'userTelecom', 'userStatus'];
       fields.forEach(id => {
@@ -171,7 +151,6 @@
       });
     });
 
-    // 직관적인 저장
     function saveProfile() {
       const keyInput = document.getElementById('api-key').value.trim();
       if (!keyInput.startsWith("AQ.")) { alert("⚠️ API 키는 'AQ.'로 시작해야 합니다."); return; }
@@ -186,7 +165,6 @@
       setTimeout(() => { btn.innerText = "설정 완료"; btn.style.background = "var(--navy)"; }, 2000);
     }
 
-    // 공유 수신 및 렌더링
     window.addEventListener('DOMContentLoaded', () => {
       const urlParams = new URLSearchParams(window.location.search);
       const sharedData = urlParams.get('text') || urlParams.get('title') || urlParams.get('url');
@@ -206,8 +184,7 @@
         const platform = detectPlatform(sharedData.toLowerCase());
         const db = benefitDB[platform];
 
-        // 고정 DB 가독성 출력
-        let staticHtml = `<b>📌 [${db.name}] 스카우터 1차 진단</b>`;
+        let staticHtml = `<b>📌 [${db.name}] 스카우터 1차 진단</b><br><br>`;
         staticHtml += db.base + "<br><br>";
         
         let hasBenefit = false;
@@ -223,9 +200,6 @@
       }
     });
 
-    // ==========================================
-    // 🧠 AI 연동 (JSON 강제화 + 스마트 캐싱 + 점진적 재시도)
-    // ==========================================
     async function analyzeWithAI_Robust(sharedText, p, platformName) {
       const SECRET_AI_KEY = localStorage.getItem('apiKey');
       if(!SECRET_AI_KEY) return;
@@ -235,10 +209,7 @@
       
       if (cachedData) {
         const parsedCache = JSON.parse(cachedData);
-        const now = new Date().getTime();
-        const diffHours = (now - parsedCache.timestamp) / (1000 * 60 * 60);
-        
-        if (diffHours < 12) {
+        if (((new Date().getTime() - parsedCache.timestamp) / (1000 * 60 * 60)) < 12) {
           document.getElementById('ai-analysis-area').innerHTML = parsedCache.html;
           return; 
         } else {
@@ -246,9 +217,26 @@
         }
       }
 
+      const loadingPhrases = [
+        "⏳ AI 정밀 분석 중...",
+        "🔍 숨겨진 프로모션 찾는 중...",
+        "💳 선택하신 카드 혜택 매칭 중...",
+        "✨ 최적의 할인 조합 계산 중...",
+        "🔄 실시간 데이터 동기화 중..."
+      ];
+      
+      const aiLoadingEl = document.getElementById('ai-loading');
+      aiLoadingEl.innerHTML = `<span id="ai-loading-text" style="color:var(--navy); font-size:15px; font-weight:bold;">${loadingPhrases[0]}</span>`;
+      
+      let phraseIdx = 0;
+      const loadingInterval = setInterval(() => {
+        phraseIdx = (phraseIdx + 1) % loadingPhrases.length;
+        const textEl = document.getElementById('ai-loading-text');
+        if(textEl) textEl.innerText = loadingPhrases[phraseIdx];
+      }, 2000);
+
       const apiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${SECRET_AI_KEY}`;
       const pText = `카드:${p.card}, 멤버십:${p.mem}, 통신사:${p.tel}, 신분:${p.stat}`;
-      
       const prompt = `쇼핑 할인 요약 AI. 텍스트:"${sharedText}" 조건:[${pText}]
       일반 혜택은 제외하고 숨은 할인 요령과 결제 주의점만 분석해.
       반드시 아래 JSON 형식으로만 대답해:
@@ -257,28 +245,19 @@
         "caution": "주의점 1문장"
       }`;
 
-      let attempt = 1;
       let delay = 3000;
 
       while (true) {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 20000); 
+        const timeoutId = setTimeout(() => controller.abort(), 15000); 
 
         try {
-          if(attempt > 1) {
-            document.getElementById('ai-loading').innerHTML = `⏳ AI 정밀 분석 중...<br><span class="retry-msg">서버 혼잡으로 우회 접속 중입니다 (${attempt}회차)</span>`;
-          }
-
           const response = await fetch(apiEndpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
               contents: [{ parts: [{ text: prompt }] }],
-              generationConfig: { 
-                maxOutputTokens: 200, 
-                temperature: 0.2,
-                responseMimeType: "application/json"
-              } 
+              generationConfig: { maxOutputTokens: 200, temperature: 0.2, responseMimeType: "application/json" } 
             }),
             signal: controller.signal
           });
@@ -286,54 +265,41 @@
           clearTimeout(timeoutId);
           const data = await response.json();
 
-          if (!response.ok) throw new Error(data.error?.message || "서버 에러");
-
-          const aiResultText = data.candidates[0].content.parts[0].text;
-          let parsedJson;
-          
-          try {
-            parsedJson = JSON.parse(aiResultText);
-            if(!parsedJson.tips || !parsedJson.caution) throw new Error("Missing fields");
-          } catch (parseError) {
-             throw new Error("ai_format_error");
+          if (data.error && data.error.message.includes("API_KEY")) {
+             throw new Error("API 키가 유효하지 않습니다.");
           }
+          if (!response.ok) throw new Error("서버 혼잡");
+
+          const parsedJson = JSON.parse(data.candidates[0].content.parts[0].text);
+          if(!parsedJson.tips || !parsedJson.caution) throw new Error("양식 오류");
 
           const tipsHtml = parsedJson.tips.map(tip => `✅ ${tip}`).join('<br>');
           const finalHtml = `
             <div class="ai-result">
               <span style="font-size:11px; color:#888; display:block; margin-bottom:8px;" class="cache-badge">✨ AI 실시간 최적화 완료</span>
-              <b>💰 추가 할인 팁</b><br>
-              ${tipsHtml}<br><br>
-              <b>⚠️ 결제 주의사항</b><br>
-              🚨 ${parsedJson.caution}
+              <b>💰 추가 할인 팁</b><br>${tipsHtml}<br><br>
+              <b>⚠️ 결제 주의사항</b><br>🚨 ${parsedJson.caution}
             </div>
           `;
           
-          const cacheObject = {
-            html: finalHtml.replace("✨ AI 실시간 최적화 완료", "⚡ 내 폰에 임시저장된 결과 (0.1초 컷)"),
-            timestamp: new Date().getTime()
-          };
-          localStorage.setItem(cacheKey, JSON.stringify(cacheObject));
-
+          localStorage.setItem(cacheKey, JSON.stringify({ html: finalHtml.replace("✨ AI 실시간 최적화 완료", "⚡ 내 폰에 임시저장된 결과 (0.1초 컷)"), timestamp: new Date().getTime() }));
+          
+          clearInterval(loadingInterval);
           document.getElementById('ai-analysis-area').innerHTML = finalHtml;
-          break;
+          break; 
 
         } catch (error) {
           clearTimeout(timeoutId);
-          
-          if (error.name !== "AbortError" && !error.message.includes("demand") && !error.message.includes("quota") && !error.message.includes("ai_format_error")) {
-            document.getElementById('ai-loading').innerHTML = `❌ <b>AI 분석 실패</b><br><span class="retry-msg">${error.message}</span>`;
-            break; 
+          if (error.message.includes("API 키")) {
+            clearInterval(loadingInterval);
+            document.getElementById('ai-analysis-area').innerHTML = `
+              <div class="ai-result" style="background:#fce8e6;">
+                ❌ <b>보안 키 오류</b><br>API 키를 다시 확인해주세요.
+              </div>`;
+            break;
           }
-          
-          attempt++;
-          if (attempt > 5) {
-             document.getElementById('ai-loading').innerHTML = `❌ <b>분석 시간 초과</b><br><span class="retry-msg">현재 구글 AI 서버가 너무 혼잡합니다. 잠시 후 다시 시도해주세요.</span>`;
-             break;
-          }
-          
           await new Promise(resolve => setTimeout(resolve, delay));
-          delay = Math.min(delay * 2, 12000); 
+          delay = Math.min(delay * 1.5, 10000); 
         }
       }
     }
