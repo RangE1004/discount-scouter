@@ -129,22 +129,40 @@
         const data = await response.json();
         if (!data.candidates || data.candidates.length === 0) throw new Error("구글 AI 데이터가 비어있습니다.");
 
-        const parsedJson = JSON.parse(data.candidates[0].content.parts[0].text);
-        const tipsHtml = parsedJson.tips.map(tip => `✅ ${tip}`).join('<br>');
+        const rawText = data.candidates[0].content.parts[0].text;
+        let tipsHtml = "";
+        let cautionText = "";
+
+        // 💡 핵심: 어떤 형태의 응답이 와도 에러 없이 화면에 출력하는 무적 파싱 로직
+        try {
+          const cleanText = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+          const parsedJson = JSON.parse(cleanText);
+          
+          if (Array.isArray(parsedJson.tips)) {
+            tipsHtml = parsedJson.tips.map(tip => `✅ ${tip}`).join('<br>');
+          } else {
+            tipsHtml = parsedJson.tips || "팁 요약 불가";
+          }
+          cautionText = parsedJson.caution || "주의점 없음";
+          
+        } catch (parseError) {
+          // JSON 변환에 완전히 실패했을 경우, 결제된 데이터(rawText)를 버리지 않고 그대로 렌더링
+          tipsHtml = rawText.replace(/\n/g, '<br>'); 
+          cautionText = "구글 AI가 자유 형식으로 답변을 제공했습니다.";
+        }
         
         document.getElementById('ai-analysis-area').innerHTML = `
           <div class="ai-result">
             <span style="font-size:11px; color:#888; display:block; margin-bottom:8px;">✨ AI 스카우터 분석 완료</span>
-            <b>💰 추가 할인 팁</b><br>${tipsHtml}<br><br>
-            <b>⚠️ 결제 주의사항</b><br>🚨 ${parsedJson.caution}
+            <b>💰 추가 할인 / 분석 결과</b><br>${tipsHtml}<br><br>
+            <b>⚠️ 결제 주의사항</b><br>🚨 ${cautionText}
           </div>
         `;
       } catch (error) {
         document.getElementById('ai-analysis-area').innerHTML = `
           <div class="ai-result" style="background:#fce8e6; border:1px solid #d93025; color:#d93025;">
-            <b>❌ 분석 실패 (상세 원인)</b><br>
+            <b>❌ 통신 실패 (상세 원인)</b><br>
             <span style="font-size:14px; color:#333; font-weight:bold; display:block; margin:8px 0;">[에러 내용] ${error.message}</span>
-            <span style="font-size:11px; color:#555;">* 504 에러일 경우 인터넷 지연 문제일 확률이 높습니다.</span>
           </div>
         `;
       }
