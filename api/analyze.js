@@ -29,34 +29,28 @@ export default async function handler(req, res) {
       console.warn("KV 캐시 조회 실패 (계속 진행):", kvError);
     }
 
-    const prompt = `You are an extreme online shopping discount expert in South Korea.
-User Profile: ${pText}
-Screen Text: ${sharedText}
+    // 💡 [핵심] 멍청한 답변을 막고 진짜 전문가처럼 대답하게 만드는 초정밀 프롬프트
+    const prompt = `당신은 한국의 독보적인 온라인 쇼핑 결제/할인 스카우터입니다.
+사용자의 [맞춤 프로필(카드/멤버십 등)]과 [화면 텍스트(스크린리더 데이터)]를 철저히 분석하여, 숨겨진 혜택과 시너지를 찾아주세요.
 
-[Rules & Priority Fallback]
-Evaluate in this strict order. Move to the next ONLY if the upper condition is not met. DO NOT invent fake promotions.
-1. Synergy: Combine user's [Card] with [Pay] for double rewards, or match [Membership] with specific [Pay/Card].
-2. Background Knowledge Reminder: Remind inherent/regular benefits based on the domain (e.g., Gmarket + Shinsegae Universe = monthly 5% coupon) without relying only on Screen Text.
-3. Strong Single Method: Recommend the single best Card/Pay (e.g., no-condition reward cards).
-4. Fallback: If no synergy/special benefit exists, honestly suggest the best basic Pay method. DO NOT return empty.
+[사용자 맞춤 프로필]
+${pText}
 
-[Prohibitions]
-- NEVER parrot/summarize the screen text's basic prices.
-- NEVER hallucinate fake events/dates. Use factual background knowledge of the user's Profile.
-- NEVER make up impossible card-pay connections.
+[현재 화면 텍스트]
+${sharedText}
 
-[Output Format]
-- Output strictly as a JSON object. NO markdown, NO code blocks.
-- "tips": Array of Max 2 strings (Korean, 30-40 chars each, clear and intuitive).
-- "caution": 1 string for key warnings (e.g., performance conditions, limits). Empty string if none.
+[분석 및 추천 가이드라인 - 절대 준수]
+1. 뻔한 앵무새 요약 금지: "와우 회원으로 구매하세요", "쿠폰을 다운로드하세요", "단순 금액 맞추기" 같이 누구나 아는 당연한 소리나 화면의 가격을 그대로 읊는 행위는 절대 금지합니다.
+2. 프로필과 화면 정보의 '정확한 팩트 매칭': 화면에 특정 카드/페이 할인(예: 삼성카드 결제 시 특별가)이 있다면, 사용자의 [맞춤 프로필]에 해당 카드/페이가 있는지 반드시 대조하여 강력하게 추천하세요.
+3. 숨은 시너지 발굴: 화면에 적혀있지 않더라도, 현재 쇼핑몰 앱(무신사, 쿠팡, 네이버 등)에서 사용자의 [멤버십/통신사/신분]으로 받을 수 있는 상시 혜택(등급 할인, 간편결제 포인트 추가 적립 등)을 배경 지식으로 끌어와 제안하세요.
+4. 구체적이고 가독성 높은 문장: "어떤 카드를", "어떤 페이에 묶어서", "어떻게 결제하면", "무슨 이득을 보는지" 명확하고 자연스러운 한국어로 설명하세요. 글자 수 제한 없이 충분히 설명해도 됩니다.
 
-[Examples]
-Bad: {"tips": ["쿠팡 와우 회원 할인을 받고 신한카드로 결제하세요."], "caution": ""}
-Good 1: {"tips": ["KB국민카드를 네이버페이에 등록 결제하여 쇼핑몰 혜택과 페이 기본 적립을 이중으로 챙기세요."], "caution": "네이버페이 포인트 적립 한도를 확인하세요."}
-Good 2: {"tips": ["G마켓 화면입니다. 신세계 유니버스 회원에게 매월 주어지는 5% 정기 쿠폰을 먼저 적용하세요."], "caution": ""}
-Good 3: {"tips": ["별도 조합 없이 보유하신 현대카드로 단독 결제하는 것이 전월 실적 제약 없이 가장 안정적입니다."], "caution": ""}
+[출력 규칙]
+- 반드시 순수한 JSON 객체로만 응답하세요. 마크다운(\`\`\`json 등)이나 인사말을 절대 포함하지 마세요.
+- "tips": 배열(Array). 가장 강력한 맞춤형 혜택 순서대로 1~3개의 문자열을 작성하세요.
+- "caution": 문자열(String). 혜택을 받기 위한 주의사항이나 전월 실적 조건 등. (예: "결제창에서 일반결제가 아닌 꼭 OO페이를 선택해야 할인이 적용됩니다.")
 
-Output JSON now:`;
+출력 JSON:`;
 
     const apiEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=" + SECRET_AI_KEY;
 
@@ -66,8 +60,10 @@ Output JSON now:`;
       body: JSON.stringify({ 
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: { 
-          maxOutputTokens: 800,
-          temperature: 0.1
+          // 💡 [핵심] 토큰 아끼지 말고 충분히 생각하고 말 끝까지 다 하도록 한도 대폭 상향 (800 -> 2048)
+          maxOutputTokens: 2048,
+          // 💡 온도를 살짝 올려(0.1 -> 0.3) 기계적인 답변 대신 더 유연하게 맥락을 파악하도록 수정
+          temperature: 0.3
         } 
       })
     });
@@ -85,13 +81,19 @@ Output JSON now:`;
     }
 
     let aiTextResult = candidate.content.parts[0].text.trim();
+    
+    // 혹시라도 AI가 습관처럼 마크다운 기호를 붙이면 강제 제거
     aiTextResult = aiTextResult.replace(/^```json/i, '').replace(/^```/, '').replace(/```$/, '').trim();
 
+    // 중도에 끊기지 않았는지 기본 검사 후, 형식이 깨졌으면 억지로 묶어줌
     if (!aiTextResult.startsWith('{')) {
       aiTextResult = JSON.stringify({
         tips: [aiTextResult],
         caution: ""
       });
+      candidate.content.parts[0].text = aiTextResult;
+    } else {
+      // 응답을 그대로 전달하기 위해 덮어쓰기
       candidate.content.parts[0].text = aiTextResult;
     }
 
