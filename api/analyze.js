@@ -7,7 +7,7 @@ export default async function handler(req, res) {
   const { sharedText, pText } = req.body;
   const SECRET_AI_KEY = process.env.GEMINI_API_KEY; 
 
-  if (!SECRET_AI_KEY) return res.status(500).json({ error: '서버에 API 키가 없습니다.' });
+  if (!SECRET_AI_KEY) return res.status(500).json({ error: '서버에 API 키(GEMINI_API_KEY)가 등록되지 않았습니다.' });
   if (!sharedText || !pText) return res.status(400).json({ error: '데이터가 없습니다.' });
 
   try {
@@ -20,9 +20,13 @@ export default async function handler(req, res) {
     const hashInput = noiseFreeText + pText;
     const cacheKey = 'discount_cache_' + crypto.createHash('sha256').update(hashInput).digest('hex');
 
-    const cachedData = await kv.get(cacheKey);
-    if (cachedData) {
-      return res.status(200).json(cachedData);
+    try {
+      const cachedData = await kv.get(cacheKey);
+      if (cachedData) {
+        return res.status(200).json(cachedData);
+      }
+    } catch (kvError) {
+      console.warn("KV 캐시 조회 실패 (계속 진행):", kvError);
     }
 
     const prompt = `You are an extreme online shopping discount expert in South Korea.
@@ -54,7 +58,6 @@ Good 3: {"tips": ["별도 조합 없이 보유하신 현대카드로 단독 결�
 
 Output JSON now:`;
 
-    // 💡 404 에러 해결: 구글 공식 API 엔드포인트(1.5-flash)로 원복
     const apiEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=" + SECRET_AI_KEY;
 
     const response = await fetch(apiEndpoint, {
@@ -72,17 +75,16 @@ Output JSON now:`;
     const data = await response.json();
     
     if (!response.ok) {
-      return res.status(response.status).json({ error: data.error?.message || `구글 통신 실패 (${response.status})` });
+      const errorMsg = data.error?.message || `구글 통신 실패 (${response.status})`;
+      return res.status(response.status).json({ error: `[구글 API 오류 ${response.status}] ${errorMsg}` });
     }
     
     const candidate = data.candidates && data.candidates[0];
     if (!candidate || !candidate.content || !candidate.content.parts || candidate.content.parts.length === 0) {
-      return res.status(500).json({ error: `AI 응답 데이터 생성 실패 또는 차단됨` });
+      return res.status(500).json({ error: 'AI 응답 데이터 생성 실패 또는 차단됨' });
     }
 
     let aiTextResult = candidate.content.parts[0].text.trim();
-    
-    // 💡 마크다운 및 글자 깨짐 방지 강제 포장 로직
     aiTextResult = aiTextResult.replace(/^```json/i, '').replace(/^```/, '').replace(/```$/, '').trim();
 
     if (!aiTextResult.startsWith('{')) {
@@ -93,13 +95,17 @@ Output JSON now:`;
       candidate.content.parts[0].text = aiTextResult;
     }
 
-    if (aiTextResult.includes('{') && aiTextResult.includes('}')) {
-      await kv.set(cacheKey, data, { ex: 3600 });
+    try {
+      if (aiTextResult.includes('{') && aiTextResult.includes('}')) {
+        await kv.set(cacheKey, data, { ex: 3600 });
+      }
+    } catch (kvError) {
+      console.warn("KV 캐시 저장 실패:", kvError);
     }
 
-    res.status(200).json(data);
+    return res.status(200).json(data);
   } catch (error) {
     console.error("서버 에러:", error);
-    res.status(500).json({ error: `서버 오류 상세: ${error.message}` });
+    return res.status(500).json({ error: `서버 오류 상세: ${error.message}` });
   }
 }
