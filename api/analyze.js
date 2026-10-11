@@ -11,7 +11,7 @@ export default async function handler(req, res) {
   if (!sharedText || !pText) return res.status(400).json({ error: '데이터가 없습니다.' });
 
   try {
-    // 💡 [기존 방어 로직 유지] 시간, 배터리 등 무의미한 텍스트를 제거하여 캐시 적중률 극대화
+    // 💡 시간, 배터리 등 무의미한 텍스트를 제거하여 캐시 적중률 극대화
     const noiseFreeText = sharedText
       .replace(/[0-9]{1,2}[:.][0-9]{2}/g, '')
       .replace(/[0-9]+%/g, '')
@@ -29,7 +29,6 @@ export default async function handler(req, res) {
 
     console.log("🔍 캐시 없음. Gemini AI 4단계 최적화 분석 시작...");
 
-    // 💡 [신규 프롬프트 적용] 작성해주신 가이드를 토큰 절약형 영어 프롬프트로 변환
     const prompt = `You are an extreme online shopping discount expert in South Korea.
 User Profile: ${pText}
 Screen Text: ${sharedText}
@@ -59,8 +58,8 @@ Good 3: {"tips": ["별도 조합 없이 보유하신 현대카드로 단독 결�
 
 Output JSON now:`;
 
-    // 💡 최신 모델 적용 및 생성 토큰 제한(maxOutputTokens)으로 비용 2차 방어
-    const apiEndpoint = `[https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$](https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$){SECRET_AI_KEY}`;
+    // 💡 최신 3.8 플래시 모델 반영 및 특수문자 에러($)를 방지하는 안전한 + 덧셈 방식으로 수정 완료
+    const apiEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=" + SECRET_AI_KEY;
 
     const response = await fetch(apiEndpoint, {
       method: 'POST',
@@ -68,8 +67,8 @@ Output JSON now:`;
       body: JSON.stringify({ 
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: { 
-          maxOutputTokens: 300, // JSON 응답은 짧으므로 토큰을 크게 제한하여 요금 낭비 방지
-          temperature: 0.1 // 창의성 제한 (환각 방지)
+          maxOutputTokens: 300, 
+          temperature: 0.1 
         } 
       })
     });
@@ -85,7 +84,6 @@ Output JSON now:`;
       return res.status(500).json({ error: `AI 응답 데이터 생성 실패 또는 차단됨` });
     }
 
-    // 💡 [기존 방어 로직 유지] 불량 JSON 검열 및 캐시 저장
     const aiTextResult = candidate.content.parts[0].text;
     if (aiTextResult.includes('{') && aiTextResult.includes('}')) {
       await kv.set(cacheKey, data, { ex: 3600 });
