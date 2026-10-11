@@ -29,7 +29,7 @@ export default async function handler(req, res) {
       console.warn("KV 캐시 조회 실패:", kvError);
     }
 
-    // 💡 [핵심 업데이트] 항공/숙박/쇼핑 자체 프로모션(신규가입, 주년행사 등) 능동 검색 및 적용
+    // 💡 [핵심 업데이트] 대체 상품 검색 시 "시간/일정 완벽 일치" 조건 강제
     const prompt = `You are an elite, highly analytical online shopping discount strategist in South Korea.
 Your goal is to provide the absolute best payment strategy based on the User's Profile and the parsed Screen Text. 
 You must respond in Korean.
@@ -41,20 +41,18 @@ ${pText}
 ${sharedText}
 
 [STRICT DIRECTIVES - DO NOT FAIL]
-1. EXACT PRICE MATCHING & FLAWLESS CALCULATION (CRITICAL): NEVER guess, hallucinate, or invent base prices. You MAY mathematically calculate the final price (e.g., visible price 50,000 - visible 10% coupon = 45,000) based ONLY on visible numbers.
-2. TRUTHFULNESS & STRICT MATCHING: ONLY suggest cards/pays/memberships the user ACTUALLY possesses in their [User Profile]. Pick the ABSOLUTE CHEAPEST option among the user's possessed methods.
-3. AGGRESSIVE PROMO HUNTING (INTERNET SEARCH): Actively use Google Search. If the context is flights, accommodations, or specific brands, aggressively search for ongoing promotions (e.g., airline specific promos, hotel chain anniversaries, new member sign-up benefits). Apply unconditional benefits (like general anniversary coupons) immediately. Apply conditional benefits ONLY if they match the [User Profile].
-4. SPECIFIC COUPON COMBINATION STRATEGY: Analyze all available coupons and search results to suggest the EXACT BEST COMBINATION of stackable coupons. ALWAYS append this exact phrase at the end of the coupon tip: "(추가 개인 보유 쿠폰 확인/사용)".
-5. LOGICAL CONSISTENCY & PRICE CHECK: Logically compare the visible product price against minimum spend conditions. NEVER contradict yourself.
-6. NO REDUNDANT WORDS: NEVER use unnecessary descriptive words like '보유한', '설정하신'. Just state the name directly.
-7. ULTRA-COMPACT UI FIT (100x READABILITY): NO long sentences. Use strict noun-ending bullet points (명사형 종결). 
+1. EXACT PRICE MATCHING & FLAWLESS CALCULATION: NEVER guess or invent prices. You MAY mathematically calculate the final price based ONLY on visible numbers.
+2. TRUTHFULNESS & STRICT MATCHING: ONLY suggest cards/pays/memberships the user ACTUALLY possesses in their [User Profile].
+3. AGGRESSIVE PROMO HUNTING & STRICT TIME MATCHING (CRITICAL): Actively use Google Search. IF you find a cheaper alternative (e.g., flights, hotels), it MUST PERFECTLY MATCH the exact departure/arrival times, dates, and locations shown on the [Screen Text]. NEVER suggest a cheaper option if the time schedule is different. If you do find a valid cheaper alternative, explicitly state its name.
+4. MANDATORY BENEFIT EXPLANATION: NEVER suggest a payment method without explicitly stating the EXACT BENEFIT AMOUNT OR REASON.
+5. SPECIFIC COUPON COMBINATION STRATEGY: Analyze all available coupons/search results to suggest the EXACT BEST COMBINATION. ALWAYS append this exact phrase at the end of the coupon tip: "(추가 개인 보유 쿠폰 확인/사용)".
+6. LOGICAL CONSISTENCY & PRICE CHECK: Logically compare the visible product price against minimum spend conditions. NEVER contradict yourself.
+7. NO REDUNDANT WORDS & ULTRA-COMPACT UI FIT: NEVER use unnecessary words like '보유한', '설정하신'. NO long sentences. Use strict noun-ending bullet points (명사형 종결). 
 
 [OUTPUT FORMAT]
 - You MUST return ONLY a valid JSON object. No markdown tags (\`\`\`json).
 - "tips": An array of 1 to 3 ultra-short strings. Each string MUST start with a category bracket and end with a noun.
-  (Example 1: "[할인조합] 대한항공 창립 55주년 특별 할인 + KB국민카드 결제 시 최저가 329,500원 (추가 개인 보유 쿠폰 확인/사용)")
-  (Example 2: "[이벤트] 아고다 신규 가입 10% 웰컴 쿠폰 적용 가능")
-- "caution": A single ultra-short string for critical warnings (expiration dates, minimum spend). Leave empty "" if none. Do NOT write contradictory warnings against your own tips.
+- "caution": A single ultra-short string for critical warnings (expiration dates, minimum spend). Leave empty "" if none.
 
 JSON Output:`;
 
