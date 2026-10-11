@@ -11,7 +11,6 @@ export default async function handler(req, res) {
   if (!sharedText || !pText) return res.status(400).json({ error: '데이터가 없습니다.' });
 
   try {
-    // 💡 시간, 배터리 등 무의미한 텍스트를 제거하여 캐시 적중률 극대화
     const noiseFreeText = sharedText
       .replace(/[0-9]{1,2}[:.][0-9]{2}/g, '')
       .replace(/[0-9]+%/g, '')
@@ -23,11 +22,8 @@ export default async function handler(req, res) {
 
     const cachedData = await kv.get(cacheKey);
     if (cachedData) {
-      console.log("⚡ 캐시 적중! 0.1초 만에 즉시 반환!");
       return res.status(200).json(cachedData);
     }
-
-    console.log("🔍 캐시 없음. Gemini AI 4단계 최적화 분석 시작...");
 
     const prompt = `You are an extreme online shopping discount expert in South Korea.
 User Profile: ${pText}
@@ -58,7 +54,7 @@ Good 3: {"tips": ["별도 조합 없이 보유하신 현대카드로 단독 결�
 
 Output JSON now:`;
 
-    // 💡 최신 3.8 플래시 모델 반영 및 특수문자 에러($)를 방지하는 안전한 + 덧셈 방식으로 수정 완료
+    // 💡 말씀하신 3.8 플래시 모델로 정확히 픽스했습니다.
     const apiEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=" + SECRET_AI_KEY;
 
     const response = await fetch(apiEndpoint, {
@@ -67,8 +63,9 @@ Output JSON now:`;
       body: JSON.stringify({ 
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: { 
-          maxOutputTokens: 300, 
-          temperature: 0.1 
+          maxOutputTokens: 800, // 💡 토큰 확장 (잘림 방지)
+          temperature: 0.1,
+          responseMimeType: "application/json" // 💡 강제 JSON 포맷팅 (파싱 에러 방지)
         } 
       })
     });
@@ -87,9 +84,6 @@ Output JSON now:`;
     const aiTextResult = candidate.content.parts[0].text;
     if (aiTextResult.includes('{') && aiTextResult.includes('}')) {
       await kv.set(cacheKey, data, { ex: 3600 });
-      console.log("✅ 정상 결과 캐시에 성공적으로 보관 완료");
-    } else {
-      console.log("⚠️ 불량 형식 감지. 캐시에 저장하지 않습니다.");
     }
 
     res.status(200).json(data);
