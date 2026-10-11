@@ -11,21 +11,25 @@ export default async function handler(req, res) {
   if (!sharedText || !pText) return res.status(400).json({ error: '데이터가 없습니다.' });
 
   try {
-    // 💡 [캐시 1단계] 스마트폰 상단바 시간 노이즈를 지우고 검색어 기반 고유 캐시 암호(Key) 생성
-    const cleanText = sharedText.replace(/[0-9]{1,2}[:.][0-9]{2}/g, ''); 
-    const hashInput = cleanText + pText;
+    // 💡 [토큰 방어 5] 캐시 둔감화: 시간, 배터리, 띄어쓰기 등 실시간 노이즈를 뼈대까지 갈아버립니다.
+    const noiseFreeText = sharedText
+      .replace(/[0-9]{1,2}[:.][0-9]{2}/g, '') // 시간 (예: 12:34) 제거
+      .replace(/[0-9]+%/g, '')                // 배터리 잔량 (예: 85%) 제거
+      .replace(/\s+/g, '')                    // 띄어쓰기, 줄바꿈 전부 제거
+      .trim();
+
+    const hashInput = noiseFreeText + pText;
     const cacheKey = 'discount_cache_' + crypto.createHash('sha256').update(hashInput).digest('hex');
 
-    // 💡 [캐시 2단계] Vercel 창고(KV)에 똑같은 검색 결과가 이미 있는지 확인
+    // 💡 [캐시 확인 단계] Vercel 창고(KV)에 똑같은 검색 결과가 이미 있는지 확인
     const cachedData = await kv.get(cacheKey);
     if (cachedData) {
       console.log("⚡ 캐시 적중! 0.1초 만에 즉시 반환!");
-      return res.status(200).json(cachedData); // AI를 부르지 않고 0.1초 만에 앱으로 즉시 전송
+      return res.status(200).json(cachedData);
     }
 
     console.log("🔍 캐시 없음. Gemini AI 분석 시작...");
 
-    // --- 기존에 작성하신 완벽한 프롬프트 및 AI 호출 로직 유지 ---
     const prompt = `당신은 대한민국 최고의 '쇼핑 결제 최적화 AI 비서'입니다.
 [사용자 조건]: ${pText}
 [화면 정보]: ${sharedText}
@@ -59,21 +63,23 @@ export default async function handler(req, res) {
 
     const data = await response.json();
     
-    // 에러 검증 로직 유지
     if (!response.ok) {
       return res.status(response.status).json({ error: data.error?.message || `구글 통신 실패 (${response.status})` });
     }
     
     const candidate = data.candidates && data.candidates[0];
-    if (!candidate) {
-      return res.status(500).json({ error: "AI가 응답 데이터를 생성하지 않았습니다." });
-    }
-    if (!candidate.content || !candidate.content.parts || candidate.content.parts.length === 0) {
-      return res.status(500).json({ error: `AI 답변 차단됨` });
+    if (!candidate || !candidate.content || !candidate.content.parts || candidate.content.parts.length === 0) {
+      return res.status(500).json({ error: `AI 응답 데이터 생성 실패 또는 차단됨` });
     }
 
-    // 💡 [캐시 3단계] AI 분석이 에러 없이 완벽하게 성공했다면 결과를 창고에 '1시간(3600초)' 동안 보관!
-    await kv.set(cacheKey, data, { ex: 3600 });
+    // 💡 [토큰 방어 6] 불량 데이터 영구 박제 차단 (완벽한 JSON 형식일 때만 1시간 캐시 저장)
+    const aiTextResult = candidate.content.parts[0].text;
+    if (aiTextResult.includes('{') && aiTextResult.includes('}')) {
+      await kv.set(cacheKey, data, { ex: 3600 });
+      console.log("✅ 정상 결과 캐시에 성공적으로 보관 완료");
+    } else {
+      console.log("⚠️ 불량 데이터 감지. 캐시에 저장하지 않습니다.");
+    }
 
     res.status(200).json(data);
   } catch (error) {
