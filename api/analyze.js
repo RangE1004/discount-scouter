@@ -29,7 +29,7 @@ export default async function handler(req, res) {
       console.warn("KV 캐시 조회 실패:", kvError);
     }
 
-    // 💡 [핵심] 화면 앵무새 차단, 숨은 쿠폰 발굴, 팩트 체크, 극강의 가독성을 강제하는 영문 프롬프트
+    // 💡 [핵심] 줄글 형태의 문장을 금지하고, [카테고리] 키워드 중심의 구조화된 포맷을 강제
     const prompt = `You are an elite, highly analytical online shopping discount strategist in South Korea.
 Your goal is to provide the absolute best payment strategy based on the User's Profile and the parsed Screen Text. 
 You must respond in Korean.
@@ -41,18 +41,20 @@ ${pText}
 ${sharedText}
 
 [STRICT DIRECTIVES - DO NOT FAIL]
-1. BEYOND THE SCREEN (No Echoing): The user can already see the screen. DO NOT just summarize or read the prices from the [Screen Text]. Your primary job is to find HIDDEN synergies and platform-specific background knowledge that are NOT written on the screen.
-2. ACTIVE COUPON HUNTING (Domain Knowledge): Actively suggest hidden coupons based on the platform.
-   - For Musinsa: Always remind the user to apply "Grade discounts (등급할인)", "Cart coupons (장바구니 쿠폰)", and "Pre-discount points (적립금 선할인)".
-   - For Coupang: Check for Wow membership-specific card promotions or routine delivery savings.
-   - For Naver/11st/etc.: Suggest combining specific Pay methods with their respective memberships.
-3. TRUTHFULNESS & STRICT MATCHING: You must ONLY suggest cards, pays, or memberships that the user ACTUALLY possesses in their [User Profile]. Never hallucinate fake discounts or events. Filter out marketing clickbait (e.g., "Up to X%").
-4. EXTREME READABILITY: No fluff, no conversational filler, no long explanations. Deliver punchy, direct action items. Focus only on "What to use" and "What the exact benefit is".
+1. BEYOND THE SCREEN (No Echoing): DO NOT just summarize or read the prices from the [Screen Text]. Find HIDDEN synergies and platform-specific background knowledge that are NOT written on the screen.
+2. ACTIVE COUPON HUNTING: Actively suggest hidden coupons based on the platform.
+   - Musinsa: "Grade discounts (등급할인)", "Cart coupons (장바구니 쿠폰)", and "Pre-discount points (적립금 선할인)".
+   - Coupang: Wow membership-specific card promotions or routine delivery savings.
+   - Naver/11st/etc.: Combine Pay methods with their respective memberships.
+3. TRUTHFULNESS & STRICT MATCHING: ONLY suggest cards/pays/memberships the user ACTUALLY possesses in their [User Profile]. Never hallucinate. Filter out clickbait ("Up to X%").
+4. AT-A-GLANCE READABILITY (No Full Sentences): Do NOT write long prose or conversational sentences. Deliver information in a highly scannable, structured keyword format. Use bracketed prefixes like [쿠폰], [결제], [조합] followed by short, punchy action phrases.
 
 [OUTPUT FORMAT]
 - You MUST return ONLY a valid JSON object. No markdown tags (\`\`\`json).
-- "tips": An array of 1 to 2 strings (in Korean). Each string must be a concise, direct instruction. (e.g., "무신사 장바구니 쿠폰과 적립금 선할인을 먼저 적용한 뒤, 보유하신 현대카드로 결제하세요.")
-- "caution": A single string (in Korean) for critical warnings (e.g., spending limits, excluded categories). Leave as empty string "" if none.
+- "tips": An array of 1 to 3 strings. Each string MUST follow the highly scannable bracket format. 
+  (Example 1: "[쿠폰] 무신사 장바구니 쿠폰 + 적립금 선할인 콤보 적용")
+  (Example 2: "[결제] 프로필 보유 '삼성카드' 결제 혜택 매칭")
+- "caution": A single string for critical warnings. Keep it as a short phrase. Leave as empty string "" if none.
 
 JSON Output:`;
 
@@ -65,7 +67,7 @@ JSON Output:`;
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: { 
           maxOutputTokens: 2048,
-          temperature: 0.1 // 💡 0.1로 낮추어 허위 사실이나 과장된 문장 생성을 극도로 억제함
+          temperature: 0.1 
         } 
       })
     });
