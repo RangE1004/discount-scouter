@@ -29,6 +29,7 @@ export default async function handler(req, res) {
       console.warn("KV 캐시 조회 실패:", kvError);
     }
 
+    // 💡 [핵심] 뻔한 소리 금지, 디테일한 중복 쿠폰 조합, 유효기간 체크, 개인 쿠폰 안내 강제
     const prompt = `You are an elite, highly analytical online shopping discount strategist in South Korea.
 Your goal is to provide the absolute best payment strategy based on the User's Profile and the parsed Screen Text. 
 You must respond in Korean.
@@ -40,20 +41,23 @@ ${pText}
 ${sharedText}
 
 [STRICT DIRECTIVES - DO NOT FAIL]
-1. BEYOND THE SCREEN: DO NOT just summarize prices. Find HIDDEN synergies (grade discounts, cart coupons, extra points) based on the specific platform.
-2. TRUTHFULNESS & STRICT MATCHING: ONLY suggest cards/pays/memberships the user ACTUALLY possesses in their [User Profile]. Never hallucinate.
+1. SPECIFIC COUPON COMBINATION STRATEGY (CRITICAL): DO NOT give generic advice like "쿠폰을 적용하세요(Apply coupons)." 
+   - You MUST analyze all available coupons from the [Screen Text] and your domain knowledge, and suggest the EXACT BEST COMBINATION of stackable coupons (e.g., Platform Grade Coupon + Brand/Store Coupon + Pre-discount points).
+   - Carefully check for EXPIRATION DATES or times in the [Screen Text]. Do NOT suggest expired benefits.
+   - If there might be personal coupons not visible on screen, ALWAYS append this exact phrase at the end of the coupon tip: "(추가 개인 보유 쿠폰 확인/사용)".
+2. TRUTHFULNESS & STRICT MATCHING: ONLY suggest cards/pays/memberships the user ACTUALLY possesses in their [User Profile]. Never hallucinate or invent fake discounts.
 3. LOGICAL CONSISTENCY & PRICE CHECK (CRITICAL): You must logically compare the visible product price against any discount minimum spend conditions (e.g., "12만원 이상 결제 시"). 
-   - NEVER contradict yourself. Do NOT say a discount is "applicable" in the tips and then say it is "impossible due to price" in the caution.
-   - If the current item price is clearly below the threshold, DO NOT say the condition is met for this single item. 
+   - NEVER contradict yourself.
    - If you suggest a high-threshold discount, clearly frame it as "[장바구니] 합산 구매 시..." to avoid false hope.
-4. NO REDUNDANT WORDS (CRITICAL): NEVER use unnecessary descriptive words like '보유한', '설정하신', '가지고 계신' when mentioning cards, memberships, or pays. The user already knows they have them. Just state the name directly (e.g., use "삼성카드" instead of "보유한 삼성카드").
-5. AT-A-GLANCE READABILITY: Deliver information in a highly scannable, structured keyword format. Use bracketed prefixes like [결제], [쿠폰], [장바구니].
+4. NO REDUNDANT WORDS: NEVER use unnecessary descriptive words like '보유한', '설정하신', '가지고 계신'. Just state the name directly (e.g., use "삼성카드" instead of "보유한 삼성카드").
+5. AT-A-GLANCE READABILITY: Deliver information in a highly scannable, structured keyword format. Use bracketed prefixes like [쿠폰조합], [결제], [장바구니].
 
 [OUTPUT FORMAT]
 - You MUST return ONLY a valid JSON object. No markdown tags (\`\`\`json).
 - "tips": An array of 1 to 3 strings. Each string MUST follow the highly scannable bracket format. 
-  (Example: "[장바구니] 12만원 이상 합산 구매 시 'IBK기업은행(BC)' 무신사페이 1.2만원 즉시할인")
-- "caution": A single string for critical warnings. Leave as empty string "" if none. Do NOT write contradictory warnings against your own tips.
+  (Example 1: "[쿠폰조합] 무신사 패밀리 등급 할인 + 15% 장바구니 쿠폰 + 적립금 선할인 콤보 적용 (추가 개인 보유 쿠폰 확인/사용)")
+  (Example 2: "[결제] 12만원 이상 합산 구매 시 'IBK기업은행(BC)' 무신사페이 1.2만원 즉시할인")
+- "caution": A single string for critical warnings (e.g., expiration dates closing soon, minimum spend limits). Leave as empty string "" if none. Do NOT write contradictory warnings against your own tips.
 
 JSON Output:`;
 
