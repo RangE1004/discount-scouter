@@ -11,53 +11,66 @@ export default async function handler(req, res) {
   if (!sharedText || !pText) return res.status(400).json({ error: '데이터가 없습니다.' });
 
   try {
-    // 💡 [토큰 방어 5] 캐시 둔감화: 시간, 배터리, 띄어쓰기 등 실시간 노이즈를 뼈대까지 갈아버립니다.
+    // 💡 [기존 방어 로직 유지] 시간, 배터리 등 무의미한 텍스트를 제거하여 캐시 적중률 극대화
     const noiseFreeText = sharedText
-      .replace(/[0-9]{1,2}[:.][0-9]{2}/g, '') // 시간 (예: 12:34) 제거
-      .replace(/[0-9]+%/g, '')                // 배터리 잔량 (예: 85%) 제거
-      .replace(/\s+/g, '')                    // 띄어쓰기, 줄바꿈 전부 제거
+      .replace(/[0-9]{1,2}[:.][0-9]{2}/g, '')
+      .replace(/[0-9]+%/g, '')
+      .replace(/\s+/g, '')
       .trim();
 
     const hashInput = noiseFreeText + pText;
     const cacheKey = 'discount_cache_' + crypto.createHash('sha256').update(hashInput).digest('hex');
 
-    // 💡 [캐시 확인 단계] Vercel 창고(KV)에 똑같은 검색 결과가 이미 있는지 확인
     const cachedData = await kv.get(cacheKey);
     if (cachedData) {
       console.log("⚡ 캐시 적중! 0.1초 만에 즉시 반환!");
       return res.status(200).json(cachedData);
     }
 
-    console.log("🔍 캐시 없음. Gemini AI 분석 시작...");
+    console.log("🔍 캐시 없음. Gemini AI 4단계 최적화 분석 시작...");
 
-    const prompt = `당신은 대한민국 최고의 '쇼핑 결제 최적화 AI 비서'입니다.
-[사용자 조건]: ${pText}
-[화면 정보]: ${sharedText}
+    // 💡 [신규 프롬프트 적용] 작성해주신 가이드를 토큰 절약형 영어 프롬프트로 변환
+    const prompt = `You are an extreme online shopping discount expert in South Korea.
+User Profile: ${pText}
+Screen Text: ${sharedText}
 
-[최상급 분석 임무]
-1. 영끌 최적화: 쿠폰, 카드 할인, 포인트를 모두 스캔하여 최적의 중복 조합을 계산하세요.
-2. 함정 방어: 최대 할인 한도, 결제 조건, 배송비 유무를 반드시 찾아내어 팩트 그대로 반영하세요.
-3. 팩트 절대주의: 화면에 정보가 없으면 절대 수치를 지어내지 마세요.
+[Rules & Priority Fallback]
+Evaluate in this strict order. Move to the next ONLY if the upper condition is not met. DO NOT invent fake promotions.
+1. Synergy: Combine user's [Card] with [Pay] for double rewards, or match [Membership] with specific [Pay/Card].
+2. Background Knowledge Reminder: Remind inherent/regular benefits based on the domain (e.g., Gmarket + Shinsegae Universe = monthly 5% coupon) without relying only on Screen Text.
+3. Strong Single Method: Recommend the single best Card/Pay (e.g., no-condition reward cards).
+4. Fallback: If no synergy/special benefit exists, honestly suggest the best basic Pay method. DO NOT return empty.
 
-[출력 형식]
-반드시 아래 JSON 형식만 정확히 출력하고 마지막 닫는 괄호(})까지 완벽하게 작성하세요.
-{
-  "tips": [
-    "[최적조합] 어떤 쿠폰과 결제수단을 조합해야 최대 혜택인지 1줄 요약",
-    "[상세혜택] 화면 내 확인된 쿠폰/할인의 명확한 수치 명시",
-    "[최종체감가] 배송비 등을 모두 반영한 실 결제 예상가"
-  ],
-  "caution": "할인 한도, 특정 결제수단 한정 등 가장 중요한 주의사항 1문장 요약. 없으면 빈 문자열(\"\")."
-}`;
+[Prohibitions]
+- NEVER parrot/summarize the screen text's basic prices.
+- NEVER hallucinate fake events/dates. Use factual background knowledge of the user's Profile.
+- NEVER make up impossible card-pay connections.
 
-    const apiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${SECRET_AI_KEY}`;
+[Output Format]
+- Output strictly as a JSON object. NO markdown, NO code blocks.
+- "tips": Array of Max 2 strings (Korean, 30-40 chars each, clear and intuitive).
+- "caution": 1 string for key warnings (e.g., performance conditions, limits). Empty string if none.
+
+[Examples]
+Bad: {"tips": ["쿠팡 와우 회원 할인을 받고 신한카드로 결제하세요."], "caution": ""}
+Good 1: {"tips": ["KB국민카드를 네이버페이에 등록 결제하여 쇼핑몰 혜택과 페이 기본 적립을 이중으로 챙기세요."], "caution": "네이버페이 포인트 적립 한도를 확인하세요."}
+Good 2: {"tips": ["G마켓 화면입니다. 신세계 유니버스 회원에게 매월 주어지는 5% 정기 쿠폰을 먼저 적용하세요."], "caution": ""}
+Good 3: {"tips": ["별도 조합 없이 보유하신 현대카드로 단독 결제하는 것이 전월 실적 제약 없이 가장 안정적입니다."], "caution": ""}
+
+Output JSON now:`;
+
+    // 💡 최신 모델 적용 및 생성 토큰 제한(maxOutputTokens)으로 비용 2차 방어
+    const apiEndpoint = `[https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$](https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$){SECRET_AI_KEY}`;
 
     const response = await fetch(apiEndpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { maxOutputTokens: 1500, temperature: 0.1 } 
+        generationConfig: { 
+          maxOutputTokens: 300, // JSON 응답은 짧으므로 토큰을 크게 제한하여 요금 낭비 방지
+          temperature: 0.1 // 창의성 제한 (환각 방지)
+        } 
       })
     });
 
@@ -72,13 +85,13 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: `AI 응답 데이터 생성 실패 또는 차단됨` });
     }
 
-    // 💡 [토큰 방어 6] 불량 데이터 영구 박제 차단 (완벽한 JSON 형식일 때만 1시간 캐시 저장)
+    // 💡 [기존 방어 로직 유지] 불량 JSON 검열 및 캐시 저장
     const aiTextResult = candidate.content.parts[0].text;
     if (aiTextResult.includes('{') && aiTextResult.includes('}')) {
       await kv.set(cacheKey, data, { ex: 3600 });
       console.log("✅ 정상 결과 캐시에 성공적으로 보관 완료");
     } else {
-      console.log("⚠️ 불량 데이터 감지. 캐시에 저장하지 않습니다.");
+      console.log("⚠️ 불량 형식 감지. 캐시에 저장하지 않습니다.");
     }
 
     res.status(200).json(data);
