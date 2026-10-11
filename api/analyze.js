@@ -54,8 +54,8 @@ Good 3: {"tips": ["별도 조합 없이 보유하신 현대카드로 단독 결�
 
 Output JSON now:`;
 
-    // 💡 가장 안정적이고 응답이 빠른 gemini-1.5-flash 모델 유지
-    const apiEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + SECRET_AI_KEY;
+    // 💡 404 에러 해결: 구글 공식 API 엔드포인트(1.5-flash)로 원복
+    const apiEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=" + SECRET_AI_KEY;
 
     const response = await fetch(apiEndpoint, {
       method: 'POST',
@@ -82,16 +82,14 @@ Output JSON now:`;
 
     let aiTextResult = candidate.content.parts[0].text.trim();
     
-    // 💡 [핵심 안전망 1] AI가 불필요한 마크다운 기호를 섞어 보냈을 경우 서버에서 강제 삭제
+    // 💡 마크다운 및 글자 깨짐 방지 강제 포장 로직
     aiTextResult = aiTextResult.replace(/^```json/i, '').replace(/^```/, '').replace(/```$/, '').trim();
 
-    // 💡 [핵심 안전망 2] AI가 JSON 괄호를 빼먹고 "국민카드 등록하세요" 라는 글자만 보냈을 경우, 서버에서 JSON 모양으로 강제 포장
     if (!aiTextResult.startsWith('{')) {
       aiTextResult = JSON.stringify({
         tips: [aiTextResult],
         caution: ""
       });
-      // 예쁘게 포장된 JSON 글자를 원본 데이터에 덮어씌워서 안드로이드 앱으로 전달
       candidate.content.parts[0].text = aiTextResult;
     }
 
