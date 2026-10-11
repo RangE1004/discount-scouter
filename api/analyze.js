@@ -7,7 +7,7 @@ export default async function handler(req, res) {
   const { sharedText, pText } = req.body;
   const SECRET_AI_KEY = process.env.GEMINI_API_KEY; 
 
-  if (!SECRET_AI_KEY) return res.status(500).json({ error: '서버에 API 키(GEMINI_API_KEY)가 없습니다.' });
+  if (!SECRET_AI_KEY) return res.status(500).json({ error: '서버에 API 키가 없습니다.' });
   if (!sharedText || !pText) return res.status(400).json({ error: '데이터가 없습니다.' });
 
   try {
@@ -29,28 +29,32 @@ export default async function handler(req, res) {
       console.warn("KV 캐시 조회 실패:", kvError);
     }
 
-    // 💡 [핵심] 가독성, 허위광고 필터링, 공격적인 혜택 발굴을 모두 지시하는 프롬프트
-    const prompt = `당신은 한국의 독보적인 온라인 쇼핑 결제/할인 스카우터입니다.
-사용자의 [맞춤 프로필]과 [화면 텍스트(스크린리더)]를 분석하여, 결제 직전 가장 완벽한 혜택 조합을 찾아주세요.
+    // 💡 [핵심] 화면 앵무새 차단, 숨은 쿠폰 발굴, 팩트 체크, 극강의 가독성을 강제하는 영문 프롬프트
+    const prompt = `You are an elite, highly analytical online shopping discount strategist in South Korea.
+Your goal is to provide the absolute best payment strategy based on the User's Profile and the parsed Screen Text. 
+You must respond in Korean.
 
-[사용자 맞춤 프로필]
+[User Profile]
 ${pText}
 
-[현재 화면 텍스트]
+[Screen Text]
 ${sharedText}
 
-[분석 및 추천 가이드라인 - 절대 준수]
-1. 과장/허위/낚시 필터링: "최대 OO% 할인", "선착순", "눈속임용 정가 부풀리기" 등 마케팅 낚시 문구에 현혹되지 마세요. 사용자의 실제 프로필 조건으로 '확실히 받을 수 있는 팩트 혜택'만 계산하세요.
-2. 맹렬한 숨은 혜택 발굴: 거짓 정보를 거른다고 소극적으로 답하지 마세요. 화면에 대놓고 보이지 않더라도, 해당 쇼핑몰(쿠팡, 무신사, 네이버 등)과 사용자의 [카드/페이/멤버십/통신사]가 만났을 때 쓸 수 있는 상시 혜택(정기 쿠폰, 페이 연동 추가 적립, 제휴 할인 등)을 반드시 찾아내어 제안하세요.
-3. 팩트 기반 프로필 매칭: 화면에 "OO카드 결제 시 할인"이 있어도, 사용자의 [프로필]에 그 카드가 없다면 과감히 무시하고, 사용자가 '보유한 수단' 내에서 최적의 조합(페이+카드 시너지 등)을 찾으세요.
-4. 극강의 가독성 (중복/TMI 금지): 구구절절한 설명, 인사말, 반복되는 단어를 철저히 배제하세요. "어떻게 결제해서 얼마(몇 %)를 이득 보는지" 핵심 행동만 직관적이고 날카롭게 짚어주세요.
+[STRICT DIRECTIVES - DO NOT FAIL]
+1. BEYOND THE SCREEN (No Echoing): The user can already see the screen. DO NOT just summarize or read the prices from the [Screen Text]. Your primary job is to find HIDDEN synergies and platform-specific background knowledge that are NOT written on the screen.
+2. ACTIVE COUPON HUNTING (Domain Knowledge): Actively suggest hidden coupons based on the platform.
+   - For Musinsa: Always remind the user to apply "Grade discounts (등급할인)", "Cart coupons (장바구니 쿠폰)", and "Pre-discount points (적립금 선할인)".
+   - For Coupang: Check for Wow membership-specific card promotions or routine delivery savings.
+   - For Naver/11st/etc.: Suggest combining specific Pay methods with their respective memberships.
+3. TRUTHFULNESS & STRICT MATCHING: You must ONLY suggest cards, pays, or memberships that the user ACTUALLY possesses in their [User Profile]. Never hallucinate fake discounts or events. Filter out marketing clickbait (e.g., "Up to X%").
+4. EXTREME READABILITY: No fluff, no conversational filler, no long explanations. Deliver punchy, direct action items. Focus only on "What to use" and "What the exact benefit is".
 
-[출력 규칙]
-- 반드시 순수한 JSON 객체로만 응답하세요. 마크다운(\`\`\`json 등) 금지.
-- "tips": 배열(Array). 가장 혜택이 큰 순서대로 1~2개의 문자열. (불필요한 서술어 없이 명확하고 짧게 작성)
-- "caution": 문자열(String). 전월 실적, 결제 수단 제한, 쿠폰 중복 불가 등 치명적인 주의사항만 1줄로 작성. 없으면 빈 문자열("").
+[OUTPUT FORMAT]
+- You MUST return ONLY a valid JSON object. No markdown tags (\`\`\`json).
+- "tips": An array of 1 to 2 strings (in Korean). Each string must be a concise, direct instruction. (e.g., "무신사 장바구니 쿠폰과 적립금 선할인을 먼저 적용한 뒤, 보유하신 현대카드로 결제하세요.")
+- "caution": A single string (in Korean) for critical warnings (e.g., spending limits, excluded categories). Leave as empty string "" if none.
 
-출력 JSON:`;
+JSON Output:`;
 
     const apiEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=" + SECRET_AI_KEY;
 
@@ -60,9 +64,8 @@ ${sharedText}
       body: JSON.stringify({ 
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: { 
-          // 넉넉한 토큰을 유지해 답변이 잘리는 것을 막되, 프롬프트에서 '짧게 쓰라'고 지시하여 가독성 통제
           maxOutputTokens: 2048,
-          temperature: 0.2
+          temperature: 0.1 // 💡 0.1로 낮추어 허위 사실이나 과장된 문장 생성을 극도로 억제함
         } 
       })
     });
