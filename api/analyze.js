@@ -54,8 +54,8 @@ Good 3: {"tips": ["별도 조합 없이 보유하신 현대카드로 단독 결�
 
 Output JSON now:`;
 
-    // 💡 말씀하신 3.8 플래시 모델로 정확히 픽스했습니다.
-    const apiEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=" + SECRET_AI_KEY;
+    // 💡 가장 안정적이고 응답이 빠른 gemini-1.5-flash 모델 유지
+    const apiEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + SECRET_AI_KEY;
 
     const response = await fetch(apiEndpoint, {
       method: 'POST',
@@ -63,9 +63,8 @@ Output JSON now:`;
       body: JSON.stringify({ 
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: { 
-          maxOutputTokens: 800, // 💡 토큰 확장 (잘림 방지)
-          temperature: 0.1,
-          responseMimeType: "application/json" // 💡 강제 JSON 포맷팅 (파싱 에러 방지)
+          maxOutputTokens: 800,
+          temperature: 0.1
         } 
       })
     });
@@ -81,7 +80,21 @@ Output JSON now:`;
       return res.status(500).json({ error: `AI 응답 데이터 생성 실패 또는 차단됨` });
     }
 
-    const aiTextResult = candidate.content.parts[0].text;
+    let aiTextResult = candidate.content.parts[0].text.trim();
+    
+    // 💡 [핵심 안전망 1] AI가 불필요한 마크다운 기호를 섞어 보냈을 경우 서버에서 강제 삭제
+    aiTextResult = aiTextResult.replace(/^```json/i, '').replace(/^```/, '').replace(/```$/, '').trim();
+
+    // 💡 [핵심 안전망 2] AI가 JSON 괄호를 빼먹고 "국민카드 등록하세요" 라는 글자만 보냈을 경우, 서버에서 JSON 모양으로 강제 포장
+    if (!aiTextResult.startsWith('{')) {
+      aiTextResult = JSON.stringify({
+        tips: [aiTextResult],
+        caution: ""
+      });
+      // 예쁘게 포장된 JSON 글자를 원본 데이터에 덮어씌워서 안드로이드 앱으로 전달
+      candidate.content.parts[0].text = aiTextResult;
+    }
+
     if (aiTextResult.includes('{') && aiTextResult.includes('}')) {
       await kv.set(cacheKey, data, { ex: 3600 });
     }
