@@ -23,19 +23,27 @@ export default async function handler(req, res) {
     } catch (e) { console.warn("KV 조회 실패:", e); }
 
     // ==========================================
-    // 💡 [STEP 1] Tavily API를 이용한 타사 최저가 크롤링
+    // 💡 [STEP 1] Tavily API를 이용한 타사 최저가 크롤링 (업그레이드 완료)
     // ==========================================
     let externalMarketData = "외부 시세 데이터 없음";
     
     // 단순 메뉴가 아닌 상품/결제 창이라고 판단될 때만 외부 API 호출
     if (TAVILY_API_KEY && sharedText.includes('원') && (sharedText.includes('구매') || sharedText.includes('장바구니'))) {
       
-      const lines = sharedText.split('\n').filter(line => line.trim().length > 2);
+      // 🚨 쓸데없는 UI 텍스트(노이즈) 필터링 로직 추가
+      const ignoreWords = ['장바구니', '무료배송', '쿠폰', '결제', '할인', '총 결제금액', '주문', '옵션', '배송비', '당일발송', '주 7일', '뒤로가기', '홈', '검색', '전체'];
+      const lines = sharedText.split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 3) // 3글자 이하 무시 (예: "찜", "톡")
+        .filter(line => !ignoreWords.some(w => line.includes(w))); // 쓰레기 단어 포함된 줄 무시
+
+      // 살아남은 첫 번째 줄을 진짜 상품명으로 간주
       const possibleProductName = lines.length > 0 ? lines[0] : ""; 
 
       if (possibleProductName) {
         try {
-          const tavilyQuery = `"${possibleProductName}" 최저가 비교 무신사 크림 다나와 가격`;
+          // 검색어 최적화 (따옴표 제거 후 핵심 키워드 추가)
+          const tavilyQuery = `${possibleProductName} KREAM 크림 무신사 최저가`;
           const tavilyRes = await fetch('https://api.tavily.com/search', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -94,7 +102,7 @@ Return ONLY a valid JSON object matching this exact structure:
   "caution": "Single string for warnings (DCC etc), or empty string."
 }`;
 
-    // 💡 사용자님 요청대로 gemini-3.8-flash 모델명 유지
+    // 사용자님 요청 모델명 적용 (gemini-3.8-flash)
     const apiEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=" + SECRET_AI_KEY;
 
     const response = await fetch(apiEndpoint, {
