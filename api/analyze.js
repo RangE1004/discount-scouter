@@ -6,13 +6,13 @@ export default async function handler(req, res) {
 
   const { sharedText, pText, appCategory } = req.body;
   const SECRET_AI_KEY = process.env.GEMINI_API_KEY;
-  const TAVILY_API_KEY = process.env.TAVILY_API_KEY; // 💡 새로 추가된 환경변수
+  const TAVILY_API_KEY = process.env.TAVILY_API_KEY;
 
   if (!SECRET_AI_KEY) return res.status(500).json({ error: '서버에 Gemini API 키가 없습니다.' });
   if (!sharedText || !pText) return res.status(400).json({ error: '데이터가 없습니다.' });
 
   try {
-    // 1. 캐시 생성 (동일 화면 반복 스캔 시 비용 방어)
+    // 1. 캐시 생성 (중복 스캔 방지 및 비용 절감)
     const noiseFreeText = sharedText.replace(/[0-9]{1,2}[:.][0-9]{2}/g, '').replace(/[0-9]+%/g, '').replace(/\s+/g, '').trim();
     const hashInput = noiseFreeText + pText;
     const cacheKey = 'discount_cache_' + crypto.createHash('sha256').update(hashInput).digest('hex');
@@ -27,10 +27,9 @@ export default async function handler(req, res) {
     // ==========================================
     let externalMarketData = "외부 시세 데이터 없음";
     
-    // 단순 메뉴 탐색이 아닌, 결제/장바구니 창이라고 판단될 때만 외부 API를 호출 (토큰/시간 아끼기)
+    // 단순 메뉴가 아닌 상품/결제 창이라고 판단될 때만 외부 API 호출
     if (TAVILY_API_KEY && sharedText.includes('원') && (sharedText.includes('구매') || sharedText.includes('장바구니'))) {
       
-      // 상품명 추출 꼼수 (첫 번째나 두 번째 줄 등 상단 텍스트를 상품명으로 간주)
       const lines = sharedText.split('\n').filter(line => line.trim().length > 2);
       const possibleProductName = lines.length > 0 ? lines[0] : ""; 
 
@@ -43,7 +42,7 @@ export default async function handler(req, res) {
             body: JSON.stringify({
               api_key: TAVILY_API_KEY,
               query: tavilyQuery,
-              search_depth: "basic", // 속도를 위해 basic (대략 1초 내외)
+              search_depth: "basic",
               include_answer: false,
               max_results: 3
             })
@@ -51,8 +50,9 @@ export default async function handler(req, res) {
 
           if (tavilyRes.ok) {
             const tavilyData = await tavilyRes.json();
-            // Tavily가 가져온 3개의 링크와 제목/요약 문구를 하나로 합침
-            externalMarketData = tavilyData.results.map(r => `출처: ${r.title}\n내용: ${r.content}`).join('\n\n');
+            if (tavilyData.results) {
+              externalMarketData = tavilyData.results.map(r => `출처: ${r.title}\n내용: ${r.content}`).join('\n\n');
+            }
           }
         } catch (e) {
           console.warn("Tavily 검색 실패 (무시하고 진행):", e);
@@ -94,15 +94,14 @@ Return ONLY a valid JSON object matching this exact structure:
   "caution": "Single string for warnings (DCC etc), or empty string."
 }`;
 
-    // responseMimeType을 추가하여 무조건 JSON 문법으로만 출력되도록 강제합니다.
-    const apiEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + SECRET_AI_KEY;
+    // 💡 사용자님 요청대로 gemini-3.8-flash 모델명 유지
+    const apiEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=" + SECRET_AI_KEY;
 
     const response = await fetch(apiEndpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         contents: [{ parts: [{ text: prompt }] }],
-        // 💡 Google Search Tool을 뺍니다. (Tavily가 더 빠르고 정확하게 찾아오므로 충돌 방지)
         generationConfig: { 
           maxOutputTokens: 2048,
           temperature: 0.1,
@@ -112,9 +111,19 @@ Return ONLY a valid JSON object matching this exact structure:
     });
 
     const data = await response.json();
-    if (!response.ok) return res.status(response.status).json({ error: `[구글 API 오류] ${data.error?.message}` });
     
-    // 캐시 저장
+    // ==========================================
+    // 💡 [STEP 3] 에러 탐정 로직 (키 갱신 여부 확인)
+    // ==========================================
+    if (!response.ok) {
+      // 서버가 현재 읽고 있는 API 키의 앞 5자리를 잘라서 에러 메시지에 붙여 보냅니다.
+      const currentKeyPrefix = SECRET_AI_KEY ? SECRET_AI_KEY.substring(0, 5) : '키없음';
+      return res.status(response.status).json({ 
+        error: `[구글 API 오류] (적용된키: ${currentKeyPrefix}...) ${data.error?.message || '알 수 없는 오류'}` 
+      });
+    }
+    
+    // 정상 처리 시 캐시 저장
     try { await kv.set(cacheKey, data, { ex: 3600 }); } catch (e) {}
 
     return res.status(200).json(data);
