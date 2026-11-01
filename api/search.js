@@ -17,8 +17,11 @@ export default async function handler(req, res) {
   const SECRET_KEY = process.env.COUPANG_SECRET_KEY;
 
   if (!query || !ACCESS_KEY || !SECRET_KEY) {
-    console.log("환경변수(API 키) 누락");
-    return res.status(200).json({ results: [] });
+    // API 키가 Vercel에 없을 경우 화면에 띄움
+    return res.status(200).json({ results: [{
+        title: "🚨 에러: Vercel 환경변수에 쿠팡 API 키가 없습니다.",
+        price: 0, imageUrl: "", productUrl: "", isRocket: false
+    }]});
   }
 
   try {
@@ -33,10 +36,7 @@ export default async function handler(req, res) {
     
     const data = await response.json();
     
-    // 💡 [핵심] 쿠팡이 뱉어낸 진짜 에러 메시지를 Vercel 로그에 기록합니다.
-    console.log("=== 쿠팡 응답 로그 ===");
-    console.log(JSON.stringify(data));
-    
+    // 정상적으로 상품을 가져온 경우
     if (data.data && data.data.productData) {
       const results = data.data.productData.map(item => ({
         title: item.productName,
@@ -48,9 +48,16 @@ export default async function handler(req, res) {
       return res.status(200).json({ results });
     }
     
-    return res.status(200).json({ results: [] });
+    // 💡 [핵심] 쿠팡이 거절했을 경우, 그 거절 사유를 상품 제목에 넣어서 안드로이드로 보냅니다!
+    return res.status(200).json({ results: [{
+        title: `🚨 쿠팡 차단 로그: ${JSON.stringify(data)}`,
+        price: 0, imageUrl: "", productUrl: "", isRocket: false
+    }]});
+    
   } catch (error) {
-    console.error("=== Vercel 에러 ===", error);
-    return res.status(200).json({ results: [] });
+    return res.status(200).json({ results: [{
+        title: `🚨 통신 에러: ${error.message}`,
+        price: 0, imageUrl: "", productUrl: "", isRocket: false
+    }]});
   }
 }
