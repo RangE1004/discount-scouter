@@ -1,6 +1,5 @@
 import crypto from 'crypto';
 
-// 쿠팡 HMAC 인증키 생성 함수
 function getCoupangAuth(method, uri, accessKey, secretKey) {
   const dateStr = new Date().toISOString(); 
   const datetime = dateStr.slice(2, 19).replace(/[-:]/g, '') + 'Z';
@@ -17,11 +16,13 @@ export default async function handler(req, res) {
   const ACCESS_KEY = process.env.COUPANG_ACCESS_KEY;
   const SECRET_KEY = process.env.COUPANG_SECRET_KEY;
 
-  if (!query || !ACCESS_KEY || !SECRET_KEY) return res.status(400).json({ error: '데이터 또는 쿠팡 키가 없습니다.' });
+  if (!query || !ACCESS_KEY || !SECRET_KEY) {
+    console.log("환경변수(API 키) 누락");
+    return res.status(200).json({ results: [] });
+  }
 
   try {
     const keyword = encodeURIComponent(query);
-    // limit=15 로 최대 15개 상품 검색
     const uri = `/v2/providers/affiliate_open_api/apis/openapi/products/search?keyword=${keyword}&limit=15`;
     const authHeader = getCoupangAuth('GET', uri, ACCESS_KEY, SECRET_KEY);
 
@@ -32,18 +33,24 @@ export default async function handler(req, res) {
     
     const data = await response.json();
     
+    // 💡 [핵심] 쿠팡이 뱉어낸 진짜 에러 메시지를 Vercel 로그에 기록합니다.
+    console.log("=== 쿠팡 응답 로그 ===");
+    console.log(JSON.stringify(data));
+    
     if (data.data && data.data.productData) {
       const results = data.data.productData.map(item => ({
         title: item.productName,
         price: item.productPrice,
         imageUrl: item.productImage,
-        productUrl: item.productUrl, // 수익이 발생하는 파트너스 링크
+        productUrl: item.productUrl,
         isRocket: item.isRocket
       }));
       return res.status(200).json({ results });
     }
+    
     return res.status(200).json({ results: [] });
   } catch (error) {
-    return res.status(500).json({ error: error.message });
+    console.error("=== Vercel 에러 ===", error);
+    return res.status(200).json({ results: [] });
   }
 }
