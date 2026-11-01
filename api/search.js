@@ -17,16 +17,15 @@ export default async function handler(req, res) {
   const SECRET_KEY = process.env.COUPANG_SECRET_KEY;
 
   if (!query || !ACCESS_KEY || !SECRET_KEY) {
-    // API 키가 Vercel에 없을 경우 화면에 띄움
-    return res.status(200).json({ results: [{
-        title: "🚨 에러: Vercel 환경변수에 쿠팡 API 키가 없습니다.",
-        price: 0, imageUrl: "", productUrl: "", isRocket: false
-    }]});
+    return res.status(200).json({ results: [] });
   }
 
   try {
     const keyword = encodeURIComponent(query);
-    const uri = `/v2/providers/affiliate_open_api/apis/openapi/products/search?keyword=${keyword}&limit=15`;
+    
+    // 💡 [해결 완료] 쿠팡 서버에서 에러를 유발하던 '&limit=15' 파라미터를 완전히 제거했습니다.
+    const uri = `/v2/providers/affiliate_open_api/apis/openapi/products/search?keyword=${keyword}`;
+    
     const authHeader = getCoupangAuth('GET', uri, ACCESS_KEY, SECRET_KEY);
 
     const response = await fetch(`https://api-gateway.coupang.com${uri}`, {
@@ -36,7 +35,7 @@ export default async function handler(req, res) {
     
     const data = await response.json();
     
-    // 정상적으로 상품을 가져온 경우
+    // 정상 응답 시 상품 리스트 반환
     if (data.data && data.data.productData) {
       const results = data.data.productData.map(item => ({
         title: item.productName,
@@ -48,7 +47,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ results });
     }
     
-    // 💡 [핵심] 쿠팡이 거절했을 경우, 그 거절 사유를 상품 제목에 넣어서 안드로이드로 보냅니다!
+    // 만약 또 다른 쿠팡 에러가 발생하면 앱 화면에 띄움
     return res.status(200).json({ results: [{
         title: `🚨 쿠팡 차단 로그: ${JSON.stringify(data)}`,
         price: 0, imageUrl: "", productUrl: "", isRocket: false
